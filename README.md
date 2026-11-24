@@ -76,6 +76,8 @@ npm run typecheck
 npm run build
 ```
 
+Front : le serveur de développement (`npm run dev -w @digimmo/front`) redirige `/api` vers l'API (proxy Vite) ; `FRONT_ORIGIN` doit valoir `http://localhost:5173`. Les tests du front sont lancés par `npm test` (ou `npm test -w @digimmo/front`) et la page `/design-system` présente les composants. Détails dans [apps/front/README.md](apps/front/README.md).
+
 Les courriers envoyés en local sont consultables dans Mailpit : http://localhost:8025.
 Les tests e2e de l'API (`npm run test:e2e -w @digimmo/back`) utilisent les bases de `docker compose` (base `digimmo_test`).
 

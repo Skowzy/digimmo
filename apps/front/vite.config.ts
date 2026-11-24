@@ -16,7 +16,7 @@ export default defineConfig({
     // son propre localStorage).
     execArgv: ['--no-experimental-webstorage'],
     css: {
-      include: [/tokens\.css/], // lu en brut par tokens.test.ts
+      include: [/\.css/], // lus en brut par tokens.test.ts et responsive.test.tsx
       modules: { classNameStrategy: 'non-scoped' },
     },
   },

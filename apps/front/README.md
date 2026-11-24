@@ -1,75 +1,35 @@
-# React + TypeScript + Vite
+# Digimmo — front
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Application React 19 + Vite + TypeScript. Le tracé du plan est rendu en SVG, les règles métier viennent de `@digimmo/domain`.
 
-Currently, two official plugins are available:
+## Démarrer
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Depuis la racine du dépôt (API et bases lancées, voir le `README.md` racine) :
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm run dev -w @digimmo/front   # http://localhost:5173
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Vite redirige (proxy) toutes les requêtes `/api` vers l'API NestJS sur `http://localhost:3000` : le navigateur ne parle qu'à une seule origine, les cookies de session fonctionnent sans configuration CORS. L'origine du front doit correspondre à `FRONT_ORIGIN` dans `.env` (`http://localhost:5173`).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Tests
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm test -w @digimmo/front        # Vitest + Testing Library + MSW + vitest-axe
+npm run lint -w @digimmo/front
+npm run typecheck -w @digimmo/front
 ```
+
+Les appels réseau sont simulés par MSW (`src/test/server.ts`) ; `renderApp(chemin)` (`src/test/render.tsx`) monte l'application complète sur une route donnée. Chaque page est aussi vérifiée avec `axe` (accessibilité). `src/app/responsive.test.tsx` contrôle par lecture des feuilles de style qu'aucune largeur fixe supérieure à 360 px n'est déclarée ; le rendu réel à 360 px se vérifie à la main.
+
+## Design system
+
+Les composants (`src/ui/`) et les jetons (`src/styles/tokens.css`) sont présentés sur la page **`/design-system`** (http://localhost:5173/design-system) : boutons, champs, pastilles de règles, alertes, modale, cartes de projet, etc.
+
+## Structure
+
+- `src/app/` : routeur, coque d'application, gardes d'accès
+- `src/pages/` : une page par route (accueil, authentification, projets, compte, catalogue admin)
+- `src/ui/` : composants du design system
+- `src/lib/` : client d'API et hooks de données (TanStack Query)
+- `src/styles/` : jetons de design et styles globaux

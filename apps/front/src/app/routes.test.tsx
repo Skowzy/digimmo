@@ -5,7 +5,7 @@ import { renderApp } from '../test/render'
 describe('routes', () => {
   it("affiche l'accueil sur /", () => {
     renderApp('/')
-    expect(screen.getByText('Digimmo')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Agencez votre future maison, pièce par pièce.' })).toBeInTheDocument()
   })
 
   it('affiche « Page introuvable » avec un lien vers l’accueil', () => {

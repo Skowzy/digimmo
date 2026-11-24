@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { axe } from 'vitest-axe'
@@ -37,9 +37,10 @@ describe('AppShell', () => {
   it('visiteur : Connexion et Créer un compte, avertissement, lien d’évitement', async () => {
     server.use(http.get('/api/auth/me', () => HttpResponse.json({ message: 'Non authentifié.' }, { status: 401 })))
     renderApp('/')
-    expect(await screen.findByRole('link', { name: 'Créer un compte' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Connexion' })).toBeInTheDocument()
-    expect(screen.getByText(AVERTISSEMENT)).toBeInTheDocument()
+    const nav = within(screen.getByRole('navigation', { name: 'Navigation principale' }))
+    expect(await nav.findByRole('link', { name: 'Créer un compte' })).toBeInTheDocument()
+    expect(nav.getByRole('link', { name: 'Connexion' })).toBeInTheDocument()
+    expect(within(screen.getByRole('contentinfo')).getByText(AVERTISSEMENT)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Aller au contenu' })).toHaveAttribute('href', '#contenu')
     expect(screen.getByRole('link', { name: 'DIGIMMO' })).toHaveAttribute('href', '/')
   })
