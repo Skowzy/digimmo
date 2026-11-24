@@ -39,11 +39,19 @@ docs/              conception et plans
 
 ## Démarrer en local
 
-Prérequis : Node.js 22.12+ et npm. (Docker sera nécessaire dès l'arrivée des bases de données.)
+Prérequis : Node.js 22.12+, npm et Docker (PostgreSQL, MongoDB, Mailpit).
 
 ```bash
 # Une seule installation, à la racine
 npm install
+
+# Variables d'environnement (valeurs de développement)
+cp .env.example .env
+
+# Bases de données et serveur de courriel de test
+docker compose up -d
+
+# Migrations : à venir (Task 3)
 
 # API (http://localhost:3000)
 npm run start:dev -w @digimmo/back
@@ -61,7 +69,8 @@ npm run typecheck
 npm run build
 ```
 
-Cette section sera mise à jour avec docker compose et les variables d'environnement (`.env.example`).
+Les courriers envoyés en local sont consultables dans Mailpit : http://localhost:8025.
+Les tests e2e de l'API (`npm run test:e2e -w @digimmo/back`) utilisent les bases de `docker compose` (base `digimmo_test`).
 
 ## Documentation
 
