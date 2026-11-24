@@ -63,6 +63,12 @@ export class PlansService {
     };
   }
 
+  /** Plan enregistré, ou null (contrairement à `get`, aucun plan vide de substitution). */
+  async findStored(projectId: string): Promise<Plan | null> {
+    const doc = await this.model.findOne({ projectId }).lean();
+    return doc ? { levels: doc.levels, stairs: doc.stairs } : null;
+  }
+
   /** Stocke le plan PARSÉ (jamais le corps brut) ; un plan qui viole des règles reste un brouillon valide. */
   async save(project: Project, body: unknown): Promise<PlanResult> {
     const parsed = parsePlan(body);

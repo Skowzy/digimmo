@@ -50,6 +50,10 @@ export class AuthService {
     return user;
   }
 
+  async verifyPassword(user: User, password: string): Promise<boolean> {
+    return argon2.verify(user.passwordHash, password).catch(() => false);
+  }
+
   sign(user: User): Promise<string> {
     return this.jwt.signAsync({ sub: user.id, role: user.role });
   }

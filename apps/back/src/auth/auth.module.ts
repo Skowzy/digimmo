@@ -26,6 +26,6 @@ import { SessionGuard } from './session.guard';
   ],
   controllers: [AuthController],
   providers: [AuthService, PasswordResetService, UsersService, SessionGuard],
-  exports: [UsersService, SessionGuard, JwtModule],
+  exports: [AuthService, UsersService, SessionGuard, JwtModule],
 })
 export class AuthModule {}

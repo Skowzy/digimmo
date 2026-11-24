@@ -9,12 +9,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
-import type { CookieOptions, Response } from 'express';
+import type { Response } from 'express';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
-import { loadEnv } from '../config/env';
 import type { User } from '../users/user.entity';
 import { SESSION_COOKIE, SESSION_DURATION_MS } from './auth.constants';
 import { AuthService } from './auth.service';
+import { cookieOptions } from './session-cookie';
 import { PasswordResetService } from './password-reset.service';
 import {
   type ForgotDto,
@@ -30,15 +30,6 @@ import { CurrentUser } from './current-user.decorator';
 import { Public } from './public.decorator';
 
 const view = (u: User) => ({ id: u.id, email: u.email, role: u.role });
-
-function cookieOptions(): CookieOptions {
-  return {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: loadEnv().NODE_ENV === 'production',
-    path: '/',
-  };
-}
 
 @Controller('auth')
 export class AuthController {

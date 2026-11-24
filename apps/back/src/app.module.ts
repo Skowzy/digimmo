@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AccountModule } from './account/account.module';
 import { AuthModule } from './auth/auth.module';
 import { RolesGuard } from './auth/roles.guard';
 import { SessionGuard } from './auth/session.guard';
@@ -38,6 +39,7 @@ import { ProjectsModule } from './projects/projects.module';
       throttlers: [{ name: 'default', ttl: 60_000, limit: 60 }],
     }),
     AuthModule,
+    AccountModule,
     CatalogModule,
     ProjectsModule,
   ],

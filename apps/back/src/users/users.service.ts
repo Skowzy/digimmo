@@ -25,4 +25,9 @@ export class UsersService {
     });
     return this.repo.save(user);
   }
+
+  /** Cascade en base : projets et jetons de réinitialisation suivent. */
+  async remove(id: string): Promise<void> {
+    await this.repo.delete({ id });
+  }
 }
