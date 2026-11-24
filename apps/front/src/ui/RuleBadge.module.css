@@ -1,0 +1,12 @@
+.badge {
+  display: inline-flex;
+  gap: var(--esp-1);
+  font-family: var(--font-cote);
+  font-size: 11px;
+  padding: 3px var(--esp-2);
+  border: 1px solid;
+  border-radius: 99px;
+}
+.ok { color: var(--sauge); border-color: var(--sauge); }
+.warning { color: var(--ocre); border-color: var(--ocre); }
+.error { color: var(--sanguine); border-color: var(--sanguine); }

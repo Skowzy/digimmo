@@ -1,0 +1,13 @@
+.tool {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--encre);
+  font-size: 16px;
+  cursor: pointer;
+}
+.on { border-color: var(--encre); background: var(--blanc); }

@@ -1,0 +1,15 @@
+.btn {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  padding: var(--esp-2) 14px;
+  border-radius: var(--rayon);
+  border: 1.5px solid var(--encre);
+  cursor: pointer;
+}
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.primary { background: var(--encre); color: var(--blanc); }
+.secondary { background: transparent; color: var(--encre); }
+.ghost { background: transparent; border-color: transparent; color: var(--encre); text-decoration: underline; text-underline-offset: 3px; }
+.danger { background: transparent; border-color: var(--sanguine); color: var(--sanguine); }
+.sm { font-size: 11px; padding: var(--esp-1) 9px; }
