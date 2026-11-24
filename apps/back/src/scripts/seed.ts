@@ -17,10 +17,14 @@ export async function seedAdmin(
   ds: DataSource,
   email: string,
   password: string,
-): Promise<'created' | 'exists'> {
+): Promise<'created' | 'exists' | 'exists-not-admin'> {
+  if (password.length < 10)
+    throw new Error('ADMIN_PASSWORD doit contenir au moins 10 caractères.');
   const repo = ds.getRepository(User);
   const normalized = email.trim().toLowerCase();
-  if (await repo.existsBy({ email: normalized })) return 'exists';
+  const existing = await repo.findOneBy({ email: normalized });
+  if (existing)
+    return existing.role === 'admin' ? 'exists' : 'exists-not-admin';
   await repo.insert({
     email: normalized,
     passwordHash: await argon2.hash(password),
@@ -45,10 +49,13 @@ async function main(): Promise<void> {
     const { ADMIN_EMAIL, ADMIN_PASSWORD } = process.env;
     if (ADMIN_EMAIL && ADMIN_PASSWORD) {
       const result = await seedAdmin(ds, ADMIN_EMAIL, ADMIN_PASSWORD);
+      const email = ADMIN_EMAIL.trim().toLowerCase();
       console.log(
-        result === 'created'
-          ? `Administrateur créé : ${ADMIN_EMAIL.trim().toLowerCase()}.`
-          : `Administrateur ${ADMIN_EMAIL.trim().toLowerCase()} : existe déjà, rien à faire.`,
+        {
+          created: `Administrateur créé : ${email}.`,
+          exists: `Administrateur ${email} : existe déjà, rien à faire.`,
+          'exists-not-admin': `ATTENTION : le compte ${email} existe mais n'est pas administrateur. Il n'a PAS été promu ; changez son rôle manuellement si c'est voulu.`,
+        }[result],
       );
     } else {
       console.log(
@@ -62,7 +69,7 @@ async function main(): Promise<void> {
 
 if (require.main === module) {
   main().catch((err: unknown) => {
-    console.error('Échec du seed :', err);
+    console.error('Échec du seed :', err instanceof Error ? err.message : err);
     process.exit(1);
   });
 }

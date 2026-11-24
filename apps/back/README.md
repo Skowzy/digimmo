@@ -41,7 +41,7 @@ npm run seed -w @digimmo/back
 ADMIN_EMAIL=moi@exemple.fr ADMIN_PASSWORD='un-mot-de-passe-solide' npm run seed -w @digimmo/back
 ```
 
-Le seed est idempotent : il applique les migrations en attente, insère le catalogue (20 meubles) seulement s'il est vide, et crée l'administrateur seulement s'il n'existe pas. `ADMIN_EMAIL` / `ADMIN_PASSWORD` peuvent aussi être renseignés dans `.env`.
+Le seed est idempotent : il applique les migrations en attente, insère le catalogue (20 meubles) seulement s'il est vide, et crée l'administrateur seulement s'il n'existe pas (un compte existant non administrateur n'est jamais promu : le seed l'indique). Mot de passe administrateur : 10 caractères minimum. `ADMIN_EMAIL` / `ADMIN_PASSWORD` peuvent aussi être renseignés dans `.env`.
 
 ## Tests
 
