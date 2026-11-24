@@ -46,7 +46,7 @@ function buildSite(t: NonNullable<CreateProjectDto['terrain']>): Site {
   const site = rectangularSite(t.widthCm, t.depthCm, t.street);
   const check = siteSchema.safeParse(site);
   if (!check.success)
-    throw new BadRequestException({ message: 'Données invalides' });
+    throw new BadRequestException({ message: 'Données invalides.' });
   return site;
 }
 

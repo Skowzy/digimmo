@@ -87,7 +87,7 @@ describe('Authentification', () => {
 
   it('refuse un mot de passe de 9 caractères avec un message français', async () => {
     const res = await register('a@example.com', '123456789').expect(400);
-    expect(bodyOf(res).message).toBe('Données invalides');
+    expect(bodyOf(res).message).toBe('Données invalides.');
     expect(bodyOf(res).issues.join(' ')).toMatch(/caractères/);
   });
 

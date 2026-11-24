@@ -155,7 +155,7 @@ describe('Projets', () => {
         .set('Cookie', cookie)
         .send(body);
       expect(res.status).toBe(400);
-      expect(res.body).toMatchObject({ message: 'Données invalides' });
+      expect(res.body).toMatchObject({ message: 'Données invalides.' });
     }
     await ctx.http
       .patch(`/api/projects/${p.id}`)
