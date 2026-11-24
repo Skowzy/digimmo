@@ -1,8 +1,5 @@
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-
-const css = readFileSync(join(import.meta.dirname, 'tokens.css'), 'utf8')
+import css from './tokens.css?raw'
 
 const NOMS = [
   'papier',
@@ -46,15 +43,13 @@ describe('tokens de couleur', () => {
     for (const f of fonds) {
       it(`${t} sur ${f} atteint 4,5:1 (AA)`, () => {
         const ratio = contraste(couleur(t), couleur(f))
-        console.log(`contraste ${t} / ${f} = ${ratio.toFixed(2)}`)
-        expect(ratio).toBeGreaterThanOrEqual(4.5)
+        expect(ratio, `${t} sur ${f} : ${ratio.toFixed(2)}`).toBeGreaterThanOrEqual(4.5)
       })
     }
   }
 
   it('blanc sur encre atteint 4,5:1 (AA)', () => {
     const ratio = contraste(couleur('blanc'), couleur('encre'))
-    console.log(`contraste blanc / encre = ${ratio.toFixed(2)}`)
-    expect(ratio).toBeGreaterThanOrEqual(4.5)
+    expect(ratio, `blanc sur encre : ${ratio.toFixed(2)}`).toBeGreaterThanOrEqual(4.5)
   })
 })

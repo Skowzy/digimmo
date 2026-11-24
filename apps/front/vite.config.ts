@@ -11,6 +11,13 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['src/test/setup.ts'],
-    css: { modules: { classNameStrategy: 'non-scoped' } },
+    // Node 25 active le webstorage et vitest passe `--localstorage-file` sans
+    // chemin aux workers, d'où un avertissement ; on le désactive (jsdom fournit
+    // son propre localStorage).
+    execArgv: ['--no-experimental-webstorage'],
+    css: {
+      include: [/tokens\.css/], // lu en brut par tokens.test.ts
+      modules: { classNameStrategy: 'non-scoped' },
+    },
   },
 })
