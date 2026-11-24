@@ -1,0 +1,9 @@
+.form { display: flex; flex-direction: column; gap: var(--esp-4); }
+.groupe { border: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: var(--esp-3); align-items: flex-end; }
+.groupe legend { font-family: var(--font-cote); font-size: 12px; padding: 0; margin-bottom: var(--esp-2); }
+.select { display: flex; flex-direction: column; gap: var(--esp-1); font-size: 12px; }
+.select select { font-family: var(--font-ui); font-size: 13px; padding: 7px 9px; border: none; border-bottom: 1.5px solid var(--encre); background: var(--blanc); color: var(--encre); }
+.select.err select { border-bottom-color: var(--sanguine); }
+.error { color: var(--sanguine); font-size: 11px; }
+.aide { color: var(--encre-2); font-size: 12px; margin: 0; width: 100%; }
+.actions { display: flex; gap: var(--esp-2); }

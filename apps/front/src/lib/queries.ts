@@ -3,6 +3,7 @@ import type { Plan, RuleParams, Site, Violation } from '@digimmo/domain'
 import { api } from './api'
 
 export type ProjectDto = { id: string; name: string; site: Site; rules: RuleParams; createdAt: string; updatedAt: string }
+export type Terrain = { widthCm: number; depthCm: number; street: 'north' | 'south' | 'east' | 'west' }
 export type PlanResponse = { plan: Plan; validation: { violations: Violation[]; checkedAt: string } }
 
 export const useProjects = () =>
@@ -17,7 +18,7 @@ export const usePlan = (id: string) =>
 export function useCreateProject() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (body: { name: string; site: Site; rules?: RuleParams }) =>
+    mutationFn: (body: { name: string; terrain: Terrain; rules?: RuleParams }) =>
       api<ProjectDto>('/projects', { method: 'POST', body }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['projects'] }),
   })
@@ -26,7 +27,7 @@ export function useCreateProject() {
 export function useUpdateProject(id: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (body: { name?: string; site?: Site; rules?: RuleParams }) =>
+    mutationFn: (body: { name?: string; terrain?: Terrain; rules?: RuleParams }) =>
       api<ProjectDto>(`/projects/${id}`, { method: 'PATCH', body }),
     onSuccess: () => Promise.all([
       queryClient.invalidateQueries({ queryKey: ['projects'] }),
