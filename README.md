@@ -39,7 +39,7 @@ docs/              conception et plans
 
 ## Démarrer en local
 
-Prérequis : Node.js 22+ et npm. (Docker sera nécessaire dès l'arrivée des bases de données.)
+Prérequis : Node.js 22.12+ et npm. (Docker sera nécessaire dès l'arrivée des bases de données.)
 
 ```bash
 # Une seule installation, à la racine
