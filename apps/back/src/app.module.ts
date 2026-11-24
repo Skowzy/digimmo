@@ -11,7 +11,6 @@ import { CatalogModule } from './catalog/catalog.module';
 import { HealthController } from './common/health.controller';
 import { loadEnv } from './config/env';
 import { typeOrmOptions } from './database/typeorm-options';
-import { PlanDoc, PlanSchema } from './plans/plan.schema';
 import { ProjectsModule } from './projects/projects.module';
 
 @Module({
@@ -32,7 +31,6 @@ import { ProjectsModule } from './projects/projects.module';
         runtimeAdapters: { os },
       }),
     }),
-    MongooseModule.forFeature([{ name: PlanDoc.name, schema: PlanSchema }]),
     // Le garde n'est posé (@UseGuards(ThrottlerGuard)) que sur les routes avec @Throttle :
     // les autres ne sont ni comptées ni annotées d'en-têtes X-RateLimit.
     ThrottlerModule.forRoot({

@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { Repository } from 'typeorm';
+import { PlansService } from '../plans/plans.service';
 import type { User } from '../users/user.entity';
 import { Project } from './project.entity';
 import type { CreateProjectDto, UpdateProjectDto } from './projects.schemas';
@@ -53,6 +54,7 @@ function buildSite(t: NonNullable<CreateProjectDto['terrain']>): Site {
 export class ProjectsService {
   constructor(
     @InjectRepository(Project) private readonly repo: Repository<Project>,
+    private readonly plans: PlansService,
   ) {}
 
   list(userId: string): Promise<Project[]> {
@@ -99,11 +101,15 @@ export class ProjectsService {
       project.streetEdge = site.streetEdge;
     }
     if (dto.rules) Object.assign(project, dto.rules);
-    return this.repo.save(project);
+    const saved = await this.repo.save(project);
+    if (dto.terrain || dto.rules) await this.plans.revalidate(saved);
+    return saved;
   }
 
   async remove(userId: string, projectId: string): Promise<void> {
     const project = await this.findOwned(userId, projectId);
+    // Plan Mongo d'abord : en cas d'échec, un nouvel essai termine le travail (l'inverse laisserait un plan orphelin).
+    await this.plans.deleteForProjects([project.id]);
     await this.repo.remove(project);
   }
 }

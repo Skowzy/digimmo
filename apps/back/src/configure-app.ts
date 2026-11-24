@@ -1,6 +1,6 @@
 import type { INestApplication } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
-import { json } from 'express';
+import { type NextFunction, type Request, type Response, json } from 'express';
 import helmet from 'helmet';
 import { z } from 'zod';
 import type { Env } from './config/env';
@@ -11,6 +11,21 @@ export function configureApp(app: INestApplication, env: Env): void {
   app.use(helmet());
   app.use(cookieParser());
   app.use(json({ limit: '1mb' }));
+  // Les erreurs du parseur de corps naissent avant le routeur Nest : ses filtres ne les voient pas.
+  app.use(bodyParserErrors);
   app.enableCors({ origin: env.FRONT_ORIGIN, credentials: true });
   app.setGlobalPrefix('api');
+}
+
+function bodyParserErrors(
+  err: { type?: string } | undefined,
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  if (err?.type === 'entity.too.large')
+    res.status(413).json({ message: 'Plan trop volumineux (1 Mo maximum).' });
+  else if (err?.type === 'entity.parse.failed')
+    res.status(400).json({ message: 'JSON invalide.' });
+  else next(err);
 }
