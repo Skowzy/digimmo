@@ -62,6 +62,20 @@ describe('Mot de passe oublié', () => {
     expect(again.body).toEqual({ message: 'Lien invalide ou expiré.' });
   });
 
+  it('deux demandes : le premier jeton est refusé après usage du second', async () => {
+    await register().expect(201);
+    await forgot('alice@example.com').expect(202);
+    await forgot('alice@example.com').expect(202);
+    const first = new URL(
+      ctx.outbox[0].text.match(/https?:\/\/\S+/)![0],
+    ).searchParams.get('token')!;
+    const second = new URL(
+      ctx.outbox[1].text.match(/https?:\/\/\S+/)![0],
+    ).searchParams.get('token')!;
+    await reset(second).expect(204);
+    await reset(first).expect(400);
+  });
+
   it('refuse un jeton inventé', async () => {
     const res = await reset('inventé').expect(400);
     expect(res.body).toEqual({ message: 'Lien invalide ou expiré.' });

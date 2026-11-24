@@ -150,4 +150,20 @@ describe('PasswordResetService', () => {
     expect(mails).toHaveLength(0);
     expect(rows).toHaveLength(0);
   });
+
+  it('la réinitialisation invalide aussi les autres jetons encore valides', async () => {
+    const { service, tokenOf, rows } = setup();
+    await service.request('alice@example.com', now);
+    const token = tokenOf();
+    // Jeton concurrent resté valide (demandes simultanées).
+    rows.push({
+      id: 'autre',
+      user: { id: 'u1' },
+      tokenHash: 'autre-hash',
+      expiresAt: plus(30),
+      usedAt: null,
+    });
+    await expect(service.reset(token, PWD, plus(1))).resolves.toBe(true);
+    expect(rows.every((r) => r.usedAt !== null)).toBe(true);
+  });
 });

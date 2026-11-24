@@ -14,6 +14,13 @@ const TOKEN_TTL_MS = 60 * 60 * 1000;
 const hashToken = (token: string) =>
   createHash('sha256').update(token).digest('hex');
 
+/** Jamais `e.message` : une réponse SMTP peut contenir l'adresse du destinataire. */
+function describeMailError(e: unknown): string {
+  const err = e as { code?: unknown; name?: unknown } | null;
+  if (typeof err?.code === 'string') return err.code;
+  return typeof err?.name === 'string' ? err.name : 'erreur inconnue';
+}
+
 @Injectable()
 export class PasswordResetService {
   private readonly logger = new Logger(PasswordResetService.name);
@@ -62,7 +69,7 @@ export class PasswordResetService {
       .catch((e: unknown) =>
         // Ni jeton ni adresse dans les journaux.
         this.logger.error(
-          `Échec d'envoi de l'e-mail de réinitialisation : ${e instanceof Error ? e.message : 'erreur inconnue'}`,
+          `Échec d'envoi de l'e-mail de réinitialisation : ${describeMailError(e)}`,
         ),
       );
   }
@@ -88,6 +95,12 @@ export class PasswordResetService {
         { usedAt: now },
       );
       if (res.affected !== 1) return false;
+      // Tout autre jeton encore valide de cet utilisateur est révoqué.
+      await m.update(
+        PasswordReset,
+        { user: { id: row.user.id }, usedAt: IsNull() },
+        { usedAt: now },
+      );
       await m.update(
         User,
         { id: row.user.id },
