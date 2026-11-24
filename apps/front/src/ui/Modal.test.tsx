@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import { StrictMode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { Modal } from './Modal'
 
@@ -24,5 +25,24 @@ describe('Modal', () => {
     rerender(<Modal open={false} title="T" onClose={() => {}}>x</Modal>)
     expect(trigger).toHaveFocus()
     trigger.remove()
+  })
+
+  it('cycle ouverture/fermeture : focus dans le dialogue puis rendu au déclencheur', () => {
+    const trigger = document.createElement('button')
+    document.body.append(trigger)
+    trigger.focus()
+    const { rerender } = render(<Modal open={false} title="T" onClose={() => {}}>x</Modal>)
+    rerender(<Modal open title="T" onClose={() => {}} footer={<button>OK</button>}>x</Modal>)
+    expect(screen.getByRole('dialog')).toContainElement(document.activeElement as HTMLElement)
+    rerender(<Modal open={false} title="T" onClose={() => {}}>x</Modal>)
+    expect(trigger).toHaveFocus()
+    trigger.remove()
+  })
+
+  it("ne rappelle pas showModal si le dialogue est déjà ouvert (double effet StrictMode)", () => {
+    const spy = vi.spyOn(HTMLDialogElement.prototype, 'showModal')
+    render(<StrictMode><Modal open title="T" onClose={() => {}}>x</Modal></StrictMode>)
+    expect(spy).toHaveBeenCalledTimes(1)
+    spy.mockRestore()
   })
 })

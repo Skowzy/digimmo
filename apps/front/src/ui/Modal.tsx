@@ -20,8 +20,10 @@ export function Modal({ open, title, onClose, children, footer }: Props) {
     const dialog = ref.current
     if (!dialog) return
     if (open) {
-      trigger.current = document.activeElement as HTMLElement | null
-      dialog.showModal()
+      if (!dialog.open) {
+        trigger.current = document.activeElement as HTMLElement | null
+        dialog.showModal()
+      }
     } else {
       dialog.close()
       trigger.current?.focus()

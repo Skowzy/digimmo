@@ -23,6 +23,13 @@ interface AxeMatchers {
 // jsdom n'implémente pas <dialog>.showModal / close.
 HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
   this.setAttribute('open', '')
+  // Comme les navigateurs : le focus passe au premier élément focalisable (sinon au dialogue).
+  const cible = this.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+  if (cible) cible.focus()
+  else {
+    this.tabIndex = -1
+    this.focus()
+  }
 }
 HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) {
   if (!this.hasAttribute('open')) return
