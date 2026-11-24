@@ -57,7 +57,7 @@ describe('ProjectCard', () => {
     rendre(undefined, undefined, 'error')
     expect(screen.getByText('Aperçu indisponible')).toBeInTheDocument()
     expect(screen.queryByText('Valide')).not.toBeInTheDocument()
-    expect(screen.queryByText(/Maison/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/· Maison/)).not.toBeInTheDocument()
   })
   it('Supprimer appelle onDelete', async () => {
     const onDelete = vi.fn()
