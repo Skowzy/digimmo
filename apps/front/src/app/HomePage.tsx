@@ -1,3 +1,10 @@
+import { FlashMessage } from './FlashMessage'
+
 export function HomePage() {
-  return <h1>Digimmo</h1>
+  return (
+    <>
+      <FlashMessage />
+      <h1>Digimmo</h1>
+    </>
+  )
 }

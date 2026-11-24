@@ -1,0 +1,4 @@
+.infos { display: grid; grid-template-columns: max-content 1fr; gap: var(--esp-2) var(--esp-4); margin: 0 0 var(--esp-5); }
+.infos dt { color: var(--encre-2, inherit); font-weight: 600; }
+.infos dd { margin: 0; overflow-wrap: anywhere; }
+.actions { display: flex; flex-wrap: wrap; gap: var(--esp-3); margin-bottom: var(--esp-4); }
