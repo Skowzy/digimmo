@@ -14,3 +14,4 @@
 .danger { background: transparent; border-color: var(--sanguine); color: var(--sanguine); }
 .sm { font-size: 11px; padding: var(--esp-1) 9px; }
 .lien { display: inline-block; text-decoration: none; }
+.lien.ghost { text-decoration: underline; text-underline-offset: 3px; }

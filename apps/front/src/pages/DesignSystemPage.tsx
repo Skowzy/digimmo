@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Alert, Button, Field, Modal, PageHeader, RuleBadge, ToolButton } from '../ui'
+import { Alert, Button, ButtonLink, Field, Modal, PageHeader, RuleBadge, ToolButton } from '../ui'
 import styles from './DesignSystemPage.module.css'
 
 const COULEURS = [
@@ -44,6 +44,15 @@ export function DesignSystemPage() {
         <p style={{ fontFamily: 'var(--font-titre)', fontStyle: 'italic', margin: 0 }}>Plan du rez-de-chaussée</p>
         <p>Ajoutez une pièce puis faites-la glisser sur le terrain.</p>
         <p className={styles.cote}>4,20 m × 3,60 m · 15,12 m²</p>
+      </section>
+
+      <section className={styles.section} aria-labelledby="ds-liens-boutons">
+        <h2 id="ds-liens-boutons">Liens-boutons</h2>
+        <div className={styles.row}>
+          <ButtonLink to="/design-system">Nouveau projet</ButtonLink>
+          <ButtonLink to="/design-system" variant="secondary">Voir les projets</ButtonLink>
+          <ButtonLink to="/design-system" variant="ghost">Retour</ButtonLink>
+        </div>
       </section>
 
       <section className={styles.section} aria-labelledby="ds-boutons">

@@ -12,6 +12,13 @@ describe('DesignSystemPage', () => {
       expect(screen.getByRole('button', { name: n })).toBeInTheDocument()
   })
 
+  it('affiche les liens-boutons', () => {
+    renderApp('/design-system')
+    expect(screen.getByRole('heading', { name: 'Liens-boutons' })).toBeInTheDocument()
+    for (const n of ['Nouveau projet', 'Voir les projets', 'Retour'])
+      expect(screen.getByRole('link', { name: n })).toHaveAttribute('href', '/design-system')
+  })
+
   it("n'a pas de violation d'accessibilité", async () => {
     const { container } = renderApp('/design-system')
     expect(await axe(container)).toHaveNoViolations()
