@@ -5,12 +5,15 @@ API NestJS de Digimmo : PostgreSQL (TypeORM, migrations versionnées) pour les c
 ## Démarrage
 
 ```bash
-docker compose up -d        # PostgreSQL, MongoDB, Mailpit
+npm install                 # à la racine ; compile aussi @digimmo/domain (script « prepare »)
 cp .env.example .env
+docker compose up -d        # PostgreSQL, MongoDB, Mailpit
 npm run migration:run -w @digimmo/back
 npm run seed -w @digimmo/back
 npm run start:dev -w @digimmo/back
 ```
+
+Si `@digimmo/domain` est introuvable (`packages/domain/dist` supprimé) : `npm run build -w @digimmo/domain`. L'API ne crée pas les tables au démarrage : `migration:run` est obligatoire.
 
 > `docker/postgres-init.sql` (création de la base `digimmo_test`) ne s'exécute que sur un volume neuf.
 > Pour le rejouer : `docker compose down -v` puis `docker compose up -d` (efface les données locales).
