@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router'
+import { resetSession } from '../app/resetSession'
 import { FlashMessage } from '../app/FlashMessage'
 import { api } from '../lib/api'
 import { useMe } from '../lib/auth'
@@ -47,7 +48,7 @@ export function AccountPage() {
   const suppression = useMutation({
     mutationFn: (password: string) => api<void>('/me', { method: 'DELETE', body: { password } }),
     onSuccess: () => {
-      queryClient.clear()
+      resetSession(queryClient)
       void navigate('/', {
         replace: true,
         state: { flash: 'Votre compte a été supprimé.' },

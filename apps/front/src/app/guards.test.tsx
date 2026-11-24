@@ -1,4 +1,4 @@
-import { act, screen } from '@testing-library/react'
+import { act, screen, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
 import { api } from '../lib/api'
@@ -54,6 +54,9 @@ describe('gardes de routes', () => {
     })
     expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument()
     expect(router.state.location.pathname + router.state.location.search).toBe('/connexion?suite=%2Fprojets')
+    const nav = screen.getByRole('navigation')
+    expect(within(nav).getByRole('link', { name: 'Connexion' })).toBeInTheDocument()
+    expect(within(nav).queryByRole('button', { name: 'Se déconnecter' })).not.toBeInTheDocument()
   })
 
   it('401 simultanés : une seule redirection et un seul vidage du cache', async () => {
@@ -70,14 +73,16 @@ describe('gardes de routes', () => {
       await new Promise((r) => setTimeout(r, 50))
       return original(...(args as Parameters<typeof original>))
     })
-    const clear = vi.spyOn(queryClient, 'clear')
+    const reset = vi.spyOn(queryClient, 'removeQueries')
     expire = true
     await act(async () => {
       await Promise.all([1, 2, 3].map(() => api('/projects').catch(() => undefined)))
     })
     await screen.findByRole('heading', { name: 'Connexion' })
-    expect(navigate).toHaveBeenCalledTimes(1)
-    expect(navigate).toHaveBeenCalledWith('/connexion?suite=%2Fprojets', { replace: true })
-    expect(clear).toHaveBeenCalledTimes(1)
+    // Le gestionnaire redirige une seule fois (appel avec une chaîne) ; la garde RequireAuth
+    // peut aussi naviguer (appel avec un objet) maintenant que `['me']` passe à null.
+    const duGestionnaire = navigate.mock.calls.filter(([to]) => typeof to === 'string')
+    expect(duGestionnaire).toEqual([['/connexion?suite=%2Fprojets', { replace: true }]])
+    expect(reset).toHaveBeenCalledTimes(1)
   })
 })

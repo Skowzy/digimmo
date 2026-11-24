@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query'
 import type { createBrowserRouter } from 'react-router'
+import { resetSession } from './resetSession'
 
 type Router = Pick<ReturnType<typeof createBrowserRouter>, 'navigate' | 'state'>
 
@@ -10,7 +11,7 @@ export function createUnauthorizedHandler(queryClient: QueryClient, router: Rout
     if (redirecting) return
     const { pathname, search } = router.state.location
     if (pathname === '/connexion') return
-    queryClient.clear()
+    resetSession(queryClient)
     redirecting = true
     void router
       .navigate(`/connexion?suite=${encodeURIComponent(pathname + search)}`, { replace: true })

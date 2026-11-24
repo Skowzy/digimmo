@@ -26,6 +26,19 @@ describe('AppShell', () => {
     expect(await screen.findByRole('link', { name: 'Connexion' })).toBeInTheDocument()
   })
 
+  it('déconnexion en échec : la session est tout de même réinitialisée localement', async () => {
+    server.use(
+      http.get('/api/auth/me', () => HttpResponse.json({ id: 'u1', email: 'a@b.fr', role: 'user' })),
+      http.get('/api/projects', () => HttpResponse.json([])),
+      http.post('/api/auth/logout', () => HttpResponse.json({ message: 'Boum.' }, { status: 500 })),
+    )
+    renderApp('/projets')
+    await userEvent.click(await screen.findByRole('button', { name: 'Se déconnecter' }))
+    const nav = screen.getByRole('navigation')
+    expect(await within(nav).findByRole('link', { name: 'Connexion' })).toBeInTheDocument()
+    expect(within(nav).queryByRole('button', { name: 'Se déconnecter' })).not.toBeInTheDocument()
+  })
+
   it('affiche les liens connecté et le lien Catalogue pour un admin', async () => {
     server.use(http.get('/api/auth/me', () => HttpResponse.json({ id: 'u1', email: 'a@b.fr', role: 'admin' })))
     renderApp('/projets')

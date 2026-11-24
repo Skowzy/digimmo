@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
+import { resetSession } from '../app/resetSession'
 import { api, ApiError } from './api'
 
 export type Me = { id: string; email: string; role: 'user' | 'admin' }
@@ -36,9 +37,10 @@ export function useLogout() {
   const navigate = useNavigate()
   return useMutation({
     mutationFn: () => api<void>('/auth/logout', { method: 'POST' }),
-    onSuccess: () => {
-      queryClient.clear()
-      navigate('/')
+    // En cas d'échec réseau/serveur, la session est aussi réinitialisée localement.
+    onSettled: () => {
+      resetSession(queryClient)
+      void navigate('/')
     },
   })
 }

@@ -113,6 +113,9 @@ describe('mon compte', () => {
     expect(await screen.findByText('Votre compte a été supprimé.')).toBeInTheDocument()
     expect(corps).toEqual([{ password: 'secret123' }])
     expect(router.state.location.pathname).toBe('/')
+    const nav = screen.getByRole('navigation')
+    expect(within(nav).getByRole('link', { name: 'Connexion' })).toBeInTheDocument()
+    expect(within(nav).queryByRole('button', { name: 'Se déconnecter' })).not.toBeInTheDocument()
   })
 
   it('export : si le clic échoue, le lien est retiré et l\'URL révoquée', async () => {
