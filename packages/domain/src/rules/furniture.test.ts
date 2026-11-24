@@ -19,7 +19,7 @@ describe('checkFurniture', () => {
   });
 
   it('meuble à cheval sur deux pièces adjacentes → FURNITURE_OUTSIDE_ROOM', () => {
-    const f = meuble('f1', 'Table', 250, 50, 100, 100);
+    const f = meuble('f1', 'Table', 250, 50, 100, 50);
     const v = checkFurniture(niveau('rdc', [room('a', 0, 0, 300, 300), room('b', 300, 0, 300, 300)], [f]), null);
     expect(v.map((x) => x.code)).toEqual(['FURNITURE_OUTSIDE_ROOM']);
   });
