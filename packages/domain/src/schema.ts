@@ -65,6 +65,7 @@ export const planSchema = z
       const groups = [['rooms', l.rooms], ['openings', l.openings], ['furniture', l.furniture]] as const;
       for (const [key, items] of groups)
         items.forEach((it, i) => {
+          if (it.id === 'stairs') ctx.addIssue({ code: 'custom', path: ['levels', li, key, i, 'id'], message: "id réservé 'stairs'" });
           if (seen.has(it.id)) ctx.addIssue({ code: 'custom', path: ['levels', li, key, i, 'id'], message: `id dupliqué '${it.id}'` });
           seen.add(it.id);
         });

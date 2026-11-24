@@ -26,6 +26,12 @@ describe('parsePlan', () => {
     const p = { levels: [valid.levels[0], level('r1')], stairs: { rect: { x: 0, y: 0, w: 100, h: 200 } } };
     expect(parsePlan(p).ok).toBe(true);
   });
+  it("réserve l'id 'stairs' (pièce, ouverture, meuble)", () => {
+    expect(parsePlan(set(valid, 'levels.0.rooms.0.id', 'stairs')).ok).toBe(false);
+    expect(parsePlan(set(valid, 'levels.0.openings', [{ ...win, id: 'stairs' }])).ok).toBe(false);
+    const f = { id: 'stairs', catalogId: 'x', label: 'L', x: 0, y: 0, w: 10, d: 10, rotation: 0 };
+    expect(parsePlan(set(valid, 'levels.0.furniture', [f])).ok).toBe(false);
+  });
   it('refuse une coordonnée non entière', () => expect(parsePlan(set(valid, 'levels.0.rooms.0.rect.w', 420.5)).ok).toBe(false));
   it('refuse une dimension nulle', () => expect(parsePlan(set(valid, 'levels.0.rooms.0.rect.w', 0)).ok).toBe(false));
   it('refuse une coordonnée négative', () => expect(parsePlan(set(valid, 'levels.0.rooms.0.rect.x', -1)).ok).toBe(false));
