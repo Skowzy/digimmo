@@ -30,6 +30,9 @@ HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) {
   this.dispatchEvent(new Event('close'))
 }
 
+// axe appelle canvas.getContext ; jsdom ne l'implémente pas (avertissement).
+HTMLCanvasElement.prototype.getContext = () => null
+
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   cleanup()

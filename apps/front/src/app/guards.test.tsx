@@ -1,6 +1,6 @@
 import { act, screen } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api } from '../lib/api'
 import { server } from '../test/server'
 import { renderApp } from '../test/render'
@@ -54,5 +54,28 @@ describe('gardes de routes', () => {
     })
     expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument()
     expect(router.state.location.pathname + router.state.location.search).toBe('/connexion?suite=%2Fprojets')
+  })
+
+  it('401 simultanés : une seule redirection et un seul vidage du cache', async () => {
+    server.use(
+      http.get('/api/auth/me', connecte('user')),
+      http.get('/api/projects', non),
+    )
+    const { router, queryClient } = renderApp('/projets')
+    await screen.findByRole('heading', { name: 'Mes projets' })
+    // Navigation lente : router.state.location reste inchangé pendant les 401 suivants.
+    const original = router.navigate.bind(router)
+    const navigate = vi.spyOn(router, 'navigate').mockImplementation(async (...args) => {
+      await new Promise((r) => setTimeout(r, 50))
+      return original(...(args as Parameters<typeof original>))
+    })
+    const clear = vi.spyOn(queryClient, 'clear')
+    await act(async () => {
+      await Promise.all([1, 2, 3].map(() => api('/projects').catch(() => undefined)))
+    })
+    await screen.findByRole('heading', { name: 'Connexion' })
+    expect(navigate).toHaveBeenCalledTimes(1)
+    expect(navigate).toHaveBeenCalledWith('/connexion?suite=%2Fprojets', { replace: true })
+    expect(clear).toHaveBeenCalledTimes(1)
   })
 })
