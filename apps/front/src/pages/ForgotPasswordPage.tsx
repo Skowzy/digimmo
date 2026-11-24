@@ -7,8 +7,10 @@ import { Alert, Button, Field, PageHeader } from '../ui'
 import styles from './AuthPage.module.css'
 import { useEnvoiUnique } from './useEnvoiUnique'
 import { useFocusInvalide } from './useFocusInvalide'
+import { useTitrePage } from '../app/useTitrePage'
 
 export function ForgotPasswordPage() {
+  useTitrePage('Mot de passe oublié')
   const [email, setEmail] = useState('')
   const [erreur, setErreur] = useState<string | undefined>()
   const [message, setMessage] = useState<string | null>(null)

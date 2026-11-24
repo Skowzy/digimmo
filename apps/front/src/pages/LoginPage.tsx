@@ -8,8 +8,10 @@ import { Alert, Button, Field, PageHeader } from '../ui'
 import styles from './AuthPage.module.css'
 import { useEnvoiUnique } from './useEnvoiUnique'
 import { useFocusInvalide } from './useFocusInvalide'
+import { useTitrePage } from '../app/useTitrePage'
 
 export function LoginPage() {
+  useTitrePage('Connexion')
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const login = useLogin()

@@ -1,9 +1,12 @@
 import { Link } from 'react-router'
+import { PageHeader } from '../ui'
+import { useTitrePage } from './useTitrePage'
 
 export function NotFoundPage() {
+  useTitrePage('Page introuvable')
   return (
     <div>
-      <h1>Page introuvable</h1>
+      <PageHeader title="Page introuvable" />
       <Link to="/">Retour à l'accueil</Link>
     </div>
   )

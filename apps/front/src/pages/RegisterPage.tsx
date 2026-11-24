@@ -7,10 +7,12 @@ import { Alert, Button, Field, PageHeader } from '../ui'
 import styles from './AuthPage.module.css'
 import { useEnvoiUnique } from './useEnvoiUnique'
 import { useFocusInvalide } from './useFocusInvalide'
+import { useTitrePage } from '../app/useTitrePage'
 
 type Erreurs = { email?: string; password?: string; confirmation?: string }
 
 export function RegisterPage() {
+  useTitrePage('Créer un compte')
   const navigate = useNavigate()
   const register = useRegister()
   const [email, setEmail] = useState('')

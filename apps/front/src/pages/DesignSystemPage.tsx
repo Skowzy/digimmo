@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Alert, Button, ButtonLink, Field, Modal, PageHeader, RuleBadge, Select, ToolButton } from '../ui'
 import styles from './DesignSystemPage.module.css'
+import { useTitrePage } from '../app/useTitrePage'
 
 const COULEURS = [
   ['papier', ''], ['papier-2', ''], ['trait', ''], ['encre', ''], ['encre-2', ''],
@@ -17,6 +18,7 @@ const OUTILS = [
 ] as const
 
 export function DesignSystemPage() {
+  useTitrePage('Design system')
   const [modale, setModale] = useState(false)
   const [outil, setOutil] = useState('Pièce')
   return (

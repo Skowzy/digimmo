@@ -4,8 +4,10 @@ import { ProjectSettingsForm } from '../features/projects/ProjectSettingsForm'
 import { VALEURS_PAR_DEFAUT } from '../features/projects/valeursParDefaut'
 import { useCreateProject } from '../lib/queries'
 import { PageHeader } from '../ui'
+import { useTitrePage } from '../app/useTitrePage'
 
 export function NewProjectPage() {
+  useTitrePage('Nouveau projet')
   const navigate = useNavigate()
   const create = useCreateProject()
   return (

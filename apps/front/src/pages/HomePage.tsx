@@ -1,9 +1,9 @@
+import { AVERTISSEMENT } from '../app/AppShell'
 import { FlashMessage } from '../app/FlashMessage'
 import { useMe } from '../lib/auth'
 import { Alert, ButtonLink } from '../ui'
 import styles from './HomePage.module.css'
-
-const AVERTISSEMENT = 'Digimmo ne remplace ni un architecte ni un constructeur. Les plans sont indicatifs.'
+import { useTitrePage } from '../app/useTitrePage'
 
 /** Aperçu décoratif dans le style « calque » : contour de terrain en tirets, pièces, une porte. */
 function Calque() {
@@ -19,6 +19,7 @@ function Calque() {
 }
 
 export function HomePage() {
+  useTitrePage()
   const me = useMe()
   return (
     <div className={styles.accueil}>

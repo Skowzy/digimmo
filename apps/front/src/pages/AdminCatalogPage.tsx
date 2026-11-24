@@ -10,6 +10,7 @@ import { Alert, Button, Field, Modal, PageHeader, Select } from '../ui'
 import styles from './AdminCatalogPage.module.css'
 import { useEnvoiUnique } from './useEnvoiUnique'
 import { useFocusInvalide } from './useFocusInvalide'
+import { useTitrePage } from '../app/useTitrePage'
 
 const CATEGORIES: [FurnitureCategory, string][] = [
   ['chambre', 'Chambre'],
@@ -93,6 +94,7 @@ function FurnitureForm({ edition, open, onClose }: { edition: Edition; open: boo
 }
 
 export function AdminCatalogPage() {
+  useTitrePage('Catalogue')
   const { data: catalogue, isPending, error } = useCatalog()
   const suppression = useDeleteFurniture()
   const verrou = useEnvoiUnique()

@@ -7,8 +7,10 @@ import { Alert, Button, Field, PageHeader } from '../ui'
 import styles from './AuthPage.module.css'
 import { useEnvoiUnique } from './useEnvoiUnique'
 import { useFocusInvalide } from './useFocusInvalide'
+import { useTitrePage } from '../app/useTitrePage'
 
 export function ResetPasswordPage() {
+  useTitrePage('Nouveau mot de passe')
   const navigate = useNavigate()
   const { pathname, search } = useLocation()
   // Le jeton n'est lu qu'une fois (au montage) puis conservé en mémoire seulement.

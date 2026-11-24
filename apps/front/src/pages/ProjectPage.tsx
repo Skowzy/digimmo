@@ -9,6 +9,7 @@ import { Alert, ButtonLink, PageHeader, RuleBadge } from '../ui'
 import { useParams } from 'react-router'
 import type { Violation } from '@digimmo/domain'
 import styles from './ProjectPage.module.css'
+import { useTitrePage } from '../app/useTitrePage'
 
 function rang(v: Violation) {
   if (v.severity === 'error') return 0
@@ -19,6 +20,7 @@ const trier = (vs: Violation[]) => [...vs].sort((a, b) => rang(a) - rang(b))
 export function ProjectPage() {
   const { id = '' } = useParams()
   const projet = useProject(id)
+  useTitrePage(projet.data?.name ?? 'Projet')
   const plan = usePlan(id)
   const update = useUpdateProject(id)
   const [enregistre, setEnregistre] = useState(false)

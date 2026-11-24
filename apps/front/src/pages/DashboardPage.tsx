@@ -6,6 +6,7 @@ import { Alert, Button, ButtonLink, Modal, PageHeader } from '../ui'
 import { ProjectCard } from '../ui/ProjectCard'
 import styles from './DashboardPage.module.css'
 import { useEnvoiUnique } from './useEnvoiUnique'
+import { useTitrePage } from '../app/useTitrePage'
 
 function CarteProjet({ project, onDelete }: { project: ProjectDto; onDelete: () => void }) {
   const { data, isError } = usePlan(project.id)
@@ -21,6 +22,7 @@ function CarteProjet({ project, onDelete }: { project: ProjectDto; onDelete: () 
 }
 
 export function DashboardPage() {
+  useTitrePage('Mes projets')
   const { data: projets, isPending, error } = useProjects()
   const suppression = useDeleteProject()
   const verrou = useEnvoiUnique()
