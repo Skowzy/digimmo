@@ -6,7 +6,7 @@ import { ApiError, issuesFor } from '../lib/api'
 import { useCatalog, useCreateFurniture, useDeleteFurniture, useUpdateFurniture } from '../lib/queries'
 import type { FurnitureCategory, FurnitureItem } from '../lib/queries'
 import { metersToInput, parseMeters } from '../lib/units'
-import { Alert, Button, Field, Modal, PageHeader } from '../ui'
+import { Alert, Button, Field, Modal, PageHeader, Select } from '../ui'
 import styles from './AdminCatalogPage.module.css'
 import { useEnvoiUnique } from './useEnvoiUnique'
 import { useFocusInvalide } from './useFocusInvalide'
@@ -79,14 +79,9 @@ function FurnitureForm({ edition, open, onClose }: { edition: Edition; open: boo
       }
     >
       <form id="form-meuble" className={styles.form} noValidate onSubmit={valider} ref={formRef}>
-        <div className={styles.select}>
-          <label htmlFor="meuble-categorie">Catégorie</label>
-          <select id="meuble-categorie" value={category} onChange={(e) => setCategory(e.target.value as FurnitureCategory)}
-            aria-invalid={err('category') ? true : undefined} aria-describedby={err('category') ? 'meuble-categorie-erreur' : undefined}>
-            {CATEGORIES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-          </select>
-          {err('category') && <small id="meuble-categorie-erreur" className={styles.error}>{err('category')}</small>}
-        </div>
+        <Select id="meuble-categorie" label="Catégorie" value={category} error={err('category')}
+          onChange={(e) => setCategory(e.target.value as FurnitureCategory)}
+          options={CATEGORIES.map(([value, label]) => ({ value, label }))} />
         <Field label="Nom" value={name} onChange={(e) => setName(e.target.value)} error={err('name')} />
         <Field label="Largeur (m)" inputMode="decimal" mono value={width} onChange={(e) => setWidth(e.target.value)} error={err('width')} />
         <Field label="Profondeur (m)" inputMode="decimal" mono value={depth} onChange={(e) => setDepth(e.target.value)} error={err('depth')} />

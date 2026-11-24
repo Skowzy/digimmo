@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Alert, Button, ButtonLink, Field, Modal, PageHeader, RuleBadge, ToolButton } from '../ui'
+import { Alert, Button, ButtonLink, Field, Modal, PageHeader, RuleBadge, Select, ToolButton } from '../ui'
 import styles from './DesignSystemPage.module.css'
 
 const COULEURS = [
@@ -79,6 +79,7 @@ export function DesignSystemPage() {
           <Field label="Nom du projet" defaultValue="Maison Dupont" />
           <Field label="Largeur du terrain" mono defaultValue="20,00 m" />
           <Field label="Recul minimal" mono defaultValue="2,00 m" error="Le PLU impose au moins 3 m" />
+          <Select label="Côté de la voie" defaultValue="south" options={[{ value: 'north', label: 'Nord' }, { value: 'south', label: 'Sud' }, { value: 'east', label: 'Est' }, { value: 'west', label: 'Ouest' }]} />
         </div>
       </section>
 

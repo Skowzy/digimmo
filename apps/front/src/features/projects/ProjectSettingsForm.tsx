@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { RuleParams } from '@digimmo/domain'
 import { ApiError, issuesFor } from '../../lib/api'
@@ -6,7 +6,7 @@ import type { Terrain } from '../../lib/queries'
 import { decimalToInput, metersToInput, parseDecimal, parseMeters, parseMetersOrZero } from '../../lib/units'
 import { useEnvoiUnique } from '../../pages/useEnvoiUnique'
 import { useFocusInvalide } from '../../pages/useFocusInvalide'
-import { Alert, Button, Field } from '../../ui'
+import { Alert, Button, Field, Select } from '../../ui'
 import type { ProjectSettingsValues } from './valeursParDefaut'
 import styles from './ProjectSettingsForm.module.css'
 
@@ -48,7 +48,6 @@ export function ProjectSettingsForm({ initial, terrainFige = false, submitLabel,
   const [tentative, setTentative] = useState(0)
   const formRef = useFocusInvalide(tentative)
   const verrou = useEnvoiUnique()
-  const idCote = useId()
 
   // Le verrou est levé quand la requête du parent se termine.
   useEffect(() => {
@@ -118,7 +117,6 @@ export function ProjectSettingsForm({ initial, terrainFige = false, submitLabel,
     })
   }
 
-  const coteErreur = err('street')
   return (
     <form noValidate onSubmit={submit} ref={formRef} className={styles.form}>
       {messageAlerte.length > 0 && <Alert>{messageAlerte.map((m) => <div key={m}>{m}</div>)}</Alert>}
@@ -128,14 +126,9 @@ export function ProjectSettingsForm({ initial, terrainFige = false, submitLabel,
         {terrainFige && <Alert tone="warning">Terrain non rectangulaire : modification non prise en charge.</Alert>}
         <Field label="Largeur (m)" inputMode="decimal" mono value={width} onChange={(e) => setWidth(e.target.value)} error={err('width')} disabled={terrainFige} />
         <Field label="Profondeur (m)" inputMode="decimal" mono value={depth} onChange={(e) => setDepth(e.target.value)} error={err('depth')} disabled={terrainFige} />
-        <div className={`${styles.select} ${coteErreur ? styles.err : ''}`}>
-          <label htmlFor={idCote}>Côté de la voie</label>
-          <select id={idCote} value={street} onChange={(e) => setStreet(e.target.value as Terrain['street'])} disabled={terrainFige}
-            aria-invalid={coteErreur ? true : undefined} aria-describedby={coteErreur ? `${idCote}-erreur` : undefined}>
-            {COTES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-          </select>
-          {coteErreur && <small id={`${idCote}-erreur`} className={styles.error}>{coteErreur}</small>}
-        </div>
+        <Select label="Côté de la voie" value={street} error={err('street')} disabled={terrainFige}
+          onChange={(e) => setStreet(e.target.value as Terrain['street'])}
+          options={COTES.map(([value, label]) => ({ value, label }))} />
       </fieldset>
       <fieldset className={styles.groupe}>
         <legend>Règles du PLU</legend>

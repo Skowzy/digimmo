@@ -7,6 +7,3 @@
 .mono { font-family: var(--font-cote); }
 .actions { display: flex; gap: var(--esp-2); }
 .form { display: flex; flex-direction: column; gap: var(--esp-4); }
-.select { display: flex; flex-direction: column; gap: var(--esp-1); font-size: 12px; }
-.select select { font-family: var(--font-ui); font-size: 13px; padding: 7px 9px; border: none; border-bottom: 1.5px solid var(--encre); background: var(--blanc); color: var(--encre); }
-.error { color: var(--sanguine); font-size: 11px; }
