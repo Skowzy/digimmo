@@ -11,6 +11,7 @@ const op = (o: Partial<Opening> & Pick<Opening, 'id' | 'kind'>): Opening => ({ o
 const door = (o: Partial<Opening> = {}): Opening => op({ id: 'd', kind: 'door', swing: { hinge: 'start', side: 'pos' }, ...o });
 const win = (o: Partial<Opening> = {}): Opening => op({ id: 'w', kind: 'window', ...o });
 const meuble = (x: number, y: number, w: number, d: number): Furniture => ({ id: 'f', catalogId: 'armoire', label: 'Armoire', x, y, w, d, rotation: 0 });
+const porte80 = door({ width: 80 });
 const codes = (l: Level) => checkOpenings(l).map(v => v.code);
 
 describe('géométrie de porte', () => {
@@ -49,12 +50,18 @@ describe('checkOpenings', () => {
     expect(codes(lvl([win({ id: 'w1', fixed: 0, width: 100 }), win({ id: 'w2', fixed: 0, start: 200, width: 100 })]))).toEqual([]);
   });
   it('armoire dans l’arc d’une porte de 80 cm → DOOR_BLOCKED (jeu d’essai)', () => {
-    const v = checkOpenings(lvl([door({ width: 80 })], [meuble(110, 410, 50, 40)]));
+    const v = checkOpenings(lvl([porte80], [meuble(110, 410, 60, 60)]));
     expect(v.map(x => x.code)).toEqual(['DOOR_BLOCKED']);
     expect(v[0]).toMatchObject({ message: '« Armoire » gêne l\'ouverture d\'une porte.', refs: ['d', 'f'], level: 'rdc' });
   });
   it('meuble dans le coin du carré hors de l’arc → valide', () => {
+    expect(codes(lvl([porte80], [meuble(175, 475, 5, 5)]))).toEqual([]);
     expect(codes(lvl([door()], [meuble(185, 485, 5, 5)]))).toEqual([]);
+  });
+  it('distance charnière → intersection exactement égale à la largeur → pas bloquée', () => {
+    // charnière (100,400), point le plus proche (148,464) : 3-4-5 → distance 80 = largeur
+    expect(codes(lvl([porte80], [meuble(148, 464, 10, 10)]))).toEqual([]);
+    expect(codes(lvl([porte80], [meuble(147, 464, 10, 10)]))).toEqual(['DOOR_BLOCKED']);
   });
   it('porte sur mur v, côté neg, bloquée par un meuble', () => {
     const r = [...rooms.slice(0, 1), { id: 'c', type: 'chambre' as const, name: 'Ch. 2', rect: { x: 600, y: 0, w: 300, h: 400 } }];
