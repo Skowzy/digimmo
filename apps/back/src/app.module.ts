@@ -12,6 +12,7 @@ import { HealthController } from './common/health.controller';
 import { loadEnv } from './config/env';
 import { typeOrmOptions } from './database/typeorm-options';
 import { PlanDoc, PlanSchema } from './plans/plan.schema';
+import { ProjectsModule } from './projects/projects.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { PlanDoc, PlanSchema } from './plans/plan.schema';
     }),
     AuthModule,
     CatalogModule,
+    ProjectsModule,
   ],
   controllers: [HealthController],
   // L'ordre compte : SessionGuard authentifie, puis RolesGuard vérifie le rôle.
