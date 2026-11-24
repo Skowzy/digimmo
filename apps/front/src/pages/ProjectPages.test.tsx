@@ -105,6 +105,26 @@ describe('page projet', () => {
     expect(await screen.findByText('Après')).toBeInTheDocument()
   })
 
+  it('enregistrement : le focus passe sur le message de succès (le formulaire est remonté)', async () => {
+    let courant = projet
+    mockProjet([])
+    server.use(
+      http.get('/api/projects/:id', () => HttpResponse.json(courant)),
+      http.patch('/api/projects/:id', () => {
+        courant = { ...projet, updatedAt: '2026-11-24T12:00:00Z' }
+        return HttpResponse.json(courant)
+      }),
+    )
+    renderApp('/projets/p1')
+    const champ = await screen.findByLabelText('Recul sur voie (m)')
+    await userEvent.clear(champ)
+    await userEvent.type(champ, '6')
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    const alerte = await screen.findByText('Paramètres enregistrés.')
+    await waitFor(() => expect(document.activeElement).toBe(alerte.closest('[role="status"]')))
+    expect(document.activeElement).toHaveTextContent('Paramètres enregistrés.')
+  })
+
   it('404 : message et lien vers le tableau de bord', async () => {
     server.use(
       http.get('/api/auth/me', () => HttpResponse.json(me)),

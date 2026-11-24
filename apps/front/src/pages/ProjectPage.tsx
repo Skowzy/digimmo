@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FlashMessage } from '../app/FlashMessage'
 import { ProjectSettingsForm } from '../features/projects/ProjectSettingsForm'
 import type { ProjectSettingsValues } from '../features/projects/valeursParDefaut'
@@ -22,6 +22,14 @@ export function ProjectPage() {
   const plan = usePlan(id)
   const update = useUpdateProject(id)
   const [enregistre, setEnregistre] = useState(false)
+  const succesRef = useRef<HTMLDivElement>(null)
+  const misAJour = projet.data?.updatedAt
+
+  // Le formulaire est remonté après l'enregistrement (clé `updatedAt`) : le focus revient donc
+  // sur le message de succès, qui est ainsi annoncé.
+  useEffect(() => {
+    if (enregistre) succesRef.current?.focus()
+  }, [enregistre, misAJour])
 
   if (!projet.data && projet.isError) {
     const introuvable = projet.error instanceof ApiError && projet.error.status === 404
@@ -60,7 +68,7 @@ export function ProjectPage() {
       </section>
       <section className={styles.section} aria-labelledby="parametres">
         <h2 id="parametres">Paramètres du projet</h2>
-        {enregistre && <Alert tone="success">Paramètres enregistrés.</Alert>}
+        {enregistre && <Alert tone="success" ref={succesRef} tabIndex={-1}>Paramètres enregistrés.</Alert>}
         <ProjectSettingsForm
           key={p.updatedAt}
           initial={initial}
