@@ -32,9 +32,10 @@ describe('ProjectCard', () => {
     expect(screen.getByText('Terrain 600,00 m² · Maison 112,00 m²')).toBeInTheDocument()
     expect(screen.getByText("modifié à l'instant")).toBeInTheDocument()
   })
-  it('sans erreur : Valide', () => {
+  it('sans erreur : Aucun problème', () => {
     rendre([])
-    expect(screen.getByText('Valide')).toBeInTheDocument()
+    expect(screen.getByText('Aucun problème')).toBeInTheDocument()
+    expect(screen.getByText('Aucun problème').closest('.badge')).toHaveTextContent('Valide : Aucun problème')
   })
   it('alertes seules', () => {
     rendre([v('FOOTPRINT_NEAR_MAX', 'warning')])
@@ -51,12 +52,12 @@ describe('ProjectCard', () => {
   it('chargement : Maison — et pas de pastille', () => {
     rendre(undefined, undefined, 'loading')
     expect(screen.getByText('Terrain 600,00 m² · Maison —')).toBeInTheDocument()
-    expect(screen.queryByText('Valide')).not.toBeInTheDocument()
+    expect(screen.queryByText('Aucun problème')).not.toBeInTheDocument()
   })
   it('erreur du plan : Aperçu indisponible, ni surface maison ni Valide', () => {
     rendre(undefined, undefined, 'error')
     expect(screen.getByText('Aperçu indisponible')).toBeInTheDocument()
-    expect(screen.queryByText('Valide')).not.toBeInTheDocument()
+    expect(screen.queryByText('Aucun problème')).not.toBeInTheDocument()
     expect(screen.queryByText(/· Maison/)).not.toBeInTheDocument()
   })
   it('Supprimer appelle onDelete', async () => {

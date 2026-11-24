@@ -23,7 +23,7 @@ function pastille(violations: Violation[]) {
   const alertes = violations.filter((v) => v.severity === 'warning').length
   if (erreurs > 0) return <RuleBadge severity="error">{erreurs} {erreurs > 1 ? 'erreurs' : 'erreur'}</RuleBadge>
   if (alertes > 0) return <RuleBadge severity="warning">{alertes} {alertes > 1 ? 'alertes' : 'alerte'}</RuleBadge>
-  return <RuleBadge severity="ok">Valide</RuleBadge>
+  return <RuleBadge severity="ok">Aucun problème</RuleBadge>
 }
 
 export function ProjectCard({ project, plan, violations, planState = 'ok', onDelete }: Props) {

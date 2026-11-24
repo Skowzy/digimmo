@@ -35,7 +35,7 @@ describe('tableau de bord', () => {
     const liens = await screen.findAllByRole('link', { name: /Alpha|Beta/ })
     expect(liens.map((l) => l.textContent)).toEqual(['Alpha', 'Beta'])
     expect(await screen.findByText('2 erreurs')).toBeInTheDocument()
-    expect(await screen.findByText('Valide')).toBeInTheDocument()
+    expect(await screen.findByText('Aucun problème')).toBeInTheDocument()
     expect((await screen.findAllByText('Terrain 600,00 m² · Maison 112,00 m²'))).toHaveLength(2)
   })
 
@@ -107,13 +107,13 @@ describe('tableau de bord', () => {
     )
     renderApp('/projets')
     expect(await screen.findByText('Aperçu indisponible')).toBeInTheDocument()
-    expect(screen.queryByText('Valide')).not.toBeInTheDocument()
+    expect(screen.queryByText('Aucun problème')).not.toBeInTheDocument()
   })
 
   it('sans violation axe', async () => {
     mock([projet('a', 'Alpha')])
     const { container } = renderApp('/projets')
-    await screen.findByText('Valide')
+    await screen.findByText('Aucun problème')
     expect(await axe(container)).toHaveNoViolations()
   })
 })
