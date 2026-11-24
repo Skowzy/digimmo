@@ -1,0 +1,83 @@
+# --- Dépendances ---
+node_modules/
+.pnpm-store/
+
+# --- Builds ---
+dist/
+dist-ssr/
+build/
+out/
+*.tsbuildinfo
+.vite/
+
+# --- Tests et couverture ---
+coverage/
+.nyc_output/
+junit.xml
+test-results/
+playwright-report/
+playwright/.cache/
+
+# --- Variables d'environnement et secrets ---
+.env
+.env.*
+!.env.example
+*.local
+*.pem
+*.key
+
+# --- Données locales des bases (volumes Docker) ---
+.data/
+docker-data/
+*.sqlite
+*.db
+
+# --- Exports générés par l'appli en local ---
+exports/
+
+# --- Logs ---
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# --- Fichiers temporaires et runtime ---
+.temp/
+.tmp/
+tmp/
+pids/
+*.pid
+*.pid.lock
+.cache/
+.eslintcache
+
+# --- Éditeurs et IDE ---
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.sublime-workspace
+.project
+.classpath
+.settings/
+*.launch
+
+# --- Système ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --- Outils d'assistance (maquettes de brainstorming, réglages locaux) ---
+.superpowers/
+.claude/settings.local.json
