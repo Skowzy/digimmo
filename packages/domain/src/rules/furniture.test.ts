@@ -63,4 +63,8 @@ describe('checkStairs', () => {
     const plan: Plan = { levels: [niveau('rdc', [room('a', 0, 0, 400, 400)])], stairs: null };
     expect(checkStairs(plan)).toEqual([]);
   });
+  it('escalier contenu dans une pièce à chaque niveau → aucune violation', () => {
+    const plan: Plan = { levels: [niveau('rdc', [room('a', 0, 0, 400, 400)]), niveau('r1', [room('b', 0, 0, 400, 400)])], stairs: { rect } };
+    expect(checkStairs(plan)).toEqual([]);
+  });
 });
