@@ -53,3 +53,17 @@ describe('tokens de couleur', () => {
     expect(ratio, `blanc sur encre : ${ratio.toFixed(2)}`).toBeGreaterThanOrEqual(4.5)
   })
 })
+
+describe('variables CSS utilisées', () => {
+  it('toute variable var(--x) des feuilles de style est définie dans tokens.css', () => {
+    const feuilles = import.meta.glob('../**/*.css', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
+    const definies = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]))
+    const inconnues: string[] = []
+    for (const [fichier, contenu] of Object.entries(feuilles)) {
+      for (const m of contenu.matchAll(/var\(\s*(--[\w-]+)/g)) {
+        if (!definies.has(m[1])) inconnues.push(`${fichier} : ${m[1]}`)
+      }
+    }
+    expect(inconnues).toEqual([])
+  })
+})
