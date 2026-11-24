@@ -23,7 +23,8 @@ type Props = {
   initial: ProjectSettingsValues
   terrainFige?: boolean
   submitLabel: string
-  onSubmit: (values: ProjectSettingsSubmit) => void
+  /** Si une promesse est renvoyée, le verrou anti double envoi est levé quand elle se termine. */
+  onSubmit: (values: ProjectSettingsSubmit) => void | Promise<unknown>
   pending: boolean
   serverError: Error | null
 }
@@ -49,7 +50,7 @@ export function ProjectSettingsForm({ initial, terrainFige = false, submitLabel,
   const formRef = useFocusInvalide(tentative)
   const verrou = useEnvoiUnique()
 
-  // Le verrou est levé quand la requête du parent se termine.
+  // Sans promesse renvoyée par `onSubmit`, le verrou est levé quand la requête du parent se termine.
   useEffect(() => {
     if (!pending) verrou.liberer()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -110,11 +111,12 @@ export function ProjectSettingsForm({ initial, terrainFige = false, submitLabel,
       return
     }
     verrou.prendre()
-    onSubmit({
+    const envoi = onSubmit({
       name: nom,
       ...(terrain ? { terrain } : {}),
       rules: { setbackStreetCm: rv as number, setbackSidesCm: rl as number, maxFootprintPct: emp as number, minAreasM2 },
     })
+    if (envoi) void Promise.resolve(envoi).then(verrou.liberer, verrou.liberer)
   }
 
   return (

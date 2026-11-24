@@ -78,7 +78,7 @@ export function ProjectPage() {
           serverError={update.error}
           onSubmit={(values) => {
             setEnregistre(false)
-            update.mutate(values, { onSuccess: () => setEnregistre(true) })
+            return update.mutateAsync(values).then(() => setEnregistre(true), () => undefined)
           }}
         />
       </section>

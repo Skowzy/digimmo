@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { axe } from 'vitest-axe'
 import { describe, expect, it, vi } from 'vitest'
@@ -53,6 +53,22 @@ describe('ProjectSettingsForm', () => {
     await userEvent.type(screen.getByLabelText('Profondeur (m)'), '30')
     await userEvent.dblClick(screen.getByRole('button', { name: 'Créer le projet' }))
     expect(onSubmit).toHaveBeenCalledTimes(1)
+  })
+
+  it("verrou levé quand la promesse du parent se termine, même si `pending` ne change pas", async () => {
+    let finir: () => void = () => {}
+    const onSubmit = vi.fn(() => new Promise<void>((resolve) => { finir = resolve }))
+    rendre({ onSubmit })
+    await userEvent.type(screen.getByLabelText('Nom du projet'), 'Maison')
+    await userEvent.type(screen.getByLabelText('Largeur (m)'), '20')
+    await userEvent.type(screen.getByLabelText('Profondeur (m)'), '30')
+    const bouton = screen.getByRole('button', { name: 'Créer le projet' })
+    await userEvent.click(bouton)
+    await userEvent.click(bouton)
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    await act(async () => { finir() })
+    await userEvent.click(bouton)
+    expect(onSubmit).toHaveBeenCalledTimes(2)
   })
 
   it('issues serveur : sur le champ, le reste dans l\'alerte', () => {

@@ -19,7 +19,7 @@ export function NewProjectPage() {
         serverError={create.error}
         onSubmit={({ name, terrain, rules }) => {
           if (!terrain) return
-          create.mutate({ name, terrain, rules }, { onSuccess: (p) => navigate(`/projets/${p.id}`) })
+          return create.mutateAsync({ name, terrain, rules }).then((p) => navigate(`/projets/${p.id}`), () => undefined)
         }}
       />
     </div>
