@@ -28,20 +28,13 @@ Projet personnel, présenté pour le titre professionnel **Concepteur Développe
 
 ## Structure du dépôt
 
-État actuel (squelettes) :
+Monorepo npm workspaces :
 
 ```
-digimmo-back/    API NestJS
-digimmo-front/   Application React + Vite
-docs/            Conception et plans
-```
-
-Structure cible (monorepo, voir la conception) :
-
-```
-packages/domain/   géométrie et règles métier, partagées
+packages/domain/   géométrie et règles métier, partagées (à venir)
 apps/back/         API NestJS
-apps/front/        application React
+apps/front/        application React + Vite
+docs/              conception et plans
 ```
 
 ## Démarrer en local
@@ -49,25 +42,26 @@ apps/front/        application React
 Prérequis : Node.js 22+ et npm. (Docker sera nécessaire dès l'arrivée des bases de données.)
 
 ```bash
-# API (http://localhost:3000)
-cd digimmo-back
+# Une seule installation, à la racine
 npm install
-npm run start:dev
+
+# API (http://localhost:3000)
+npm run start:dev -w @digimmo/back
 
 # Front (http://localhost:5173)
-cd digimmo-front
-npm install
-npm run dev
+npm run dev -w @digimmo/front
 ```
 
-Tests de l'API :
+Qualité, depuis la racine :
 
 ```bash
-cd digimmo-back
-npm test
+npm test            # tests unitaires de tous les workspaces
+npm run lint
+npm run typecheck
+npm run build
 ```
 
-Cette section sera mise à jour avec le passage en monorepo, docker compose et les variables d'environnement (`.env.example`).
+Cette section sera mise à jour avec docker compose et les variables d'environnement (`.env.example`).
 
 ## Documentation
 
