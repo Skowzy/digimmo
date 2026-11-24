@@ -45,6 +45,7 @@ export function useLogout() {
 
 /** Valide le paramètre `suite` : uniquement un chemin interne (pas d'open redirect). */
 export function cheminSuite(suite: string | null): string {
-  if (suite && suite.startsWith('/') && !suite.startsWith('//') && !suite.startsWith('/\\')) return suite
+  // eslint-disable-next-line no-control-regex -- on rejette volontairement les caractères de contrôle
+  if (suite && suite.startsWith('/') && !suite.startsWith('//') && !/[\\\u0000-\u001f]/.test(suite)) return suite
   return '/projets'
 }

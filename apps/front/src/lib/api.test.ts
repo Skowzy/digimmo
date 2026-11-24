@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { server } from '../test/server'
-import { api, ApiError, setUnauthorizedHandler } from './api'
+import { api, ApiError, issuesFor, setUnauthorizedHandler } from './api'
 
 afterEach(() => setUnauthorizedHandler(null))
 
@@ -82,5 +82,17 @@ describe('api', () => {
     )
     await expect(api(path, { method })).rejects.toBeInstanceOf(ApiError)
     expect(handler).not.toHaveBeenCalled()
+  })
+})
+
+describe('issuesFor', () => {
+  const issues = ['email: Adresse e-mail invalide', 'password: Trop court: 10 minimum']
+  it('renvoie le message de la première issue du champ', () => {
+    expect(issuesFor(issues, 'email')).toBe('Adresse e-mail invalide')
+    expect(issuesFor(issues, 'password')).toBe('Trop court: 10 minimum')
+  })
+  it('renvoie undefined sans issue correspondante', () => {
+    expect(issuesFor(issues, 'token')).toBeUndefined()
+    expect(issuesFor(['emailx: non'], 'email')).toBeUndefined()
   })
 })

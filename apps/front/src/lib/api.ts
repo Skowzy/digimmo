@@ -57,3 +57,10 @@ export async function api<T>(path: string, init: Init = {}): Promise<T> {
   }
   return data as T
 }
+
+/** Message de la première issue du champ (format serveur « chemin: message »). */
+export function issuesFor(issues: string[], field: string): string | undefined {
+  const prefixe = `${field}: `
+  const issue = issues.find((i) => i.startsWith(prefixe))
+  return issue?.slice(prefixe.length)
+}
