@@ -5,7 +5,9 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
+import { RolesGuard } from './auth/roles.guard';
 import { SessionGuard } from './auth/session.guard';
+import { CatalogModule } from './catalog/catalog.module';
 import { HealthController } from './common/health.controller';
 import { loadEnv } from './config/env';
 import { typeOrmOptions } from './database/typeorm-options';
@@ -37,8 +39,13 @@ import { PlanDoc, PlanSchema } from './plans/plan.schema';
       throttlers: [{ name: 'default', ttl: 60_000, limit: 60 }],
     }),
     AuthModule,
+    CatalogModule,
   ],
   controllers: [HealthController],
-  providers: [{ provide: APP_GUARD, useClass: SessionGuard }],
+  // L'ordre compte : SessionGuard authentifie, puis RolesGuard vérifie le rôle.
+  providers: [
+    { provide: APP_GUARD, useClass: SessionGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
+  ],
 })
 export class AppModule {}
