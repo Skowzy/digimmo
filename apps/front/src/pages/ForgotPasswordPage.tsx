@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/react-query'
 import { api, ApiError, issuesFor } from '../lib/api'
 import { Alert, Button, Field, PageHeader } from '../ui'
 import styles from './AuthPage.module.css'
+import { useEnvoiUnique } from './useEnvoiUnique'
 import { useFocusInvalide } from './useFocusInvalide'
 
 export function ForgotPasswordPage() {
@@ -14,6 +15,7 @@ export function ForgotPasswordPage() {
   const [confirmation, setConfirmation] = useState<string | null>(null)
   const [tentative, setTentative] = useState(0)
   const formRef = useFocusInvalide(tentative)
+  const verrou = useEnvoiUnique()
   const envoi = useMutation({
     mutationFn: (adresse: string) =>
       api<{ message: string }>('/auth/password/forgot', { method: 'POST', body: { email: adresse } }),
@@ -21,7 +23,7 @@ export function ForgotPasswordPage() {
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
-    if (envoi.isPending) return
+    if (verrou.occupe()) return
     setMessage(null)
     if (!email.trim()) {
       setErreur('Saisissez votre adresse e-mail.')
@@ -29,7 +31,9 @@ export function ForgotPasswordPage() {
       return
     }
     setErreur(undefined)
+    verrou.prendre()
     envoi.mutate(email.trim(), {
+      onSettled: verrou.liberer,
       onSuccess: (data) => setConfirmation(data.message),
       onError: (err) => {
         const champ = err instanceof ApiError ? issuesFor(err.issues, 'email') : undefined

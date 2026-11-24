@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/react-query'
 import { api, ApiError, issuesFor } from '../lib/api'
 import { Alert, Button, Field, PageHeader } from '../ui'
 import styles from './AuthPage.module.css'
+import { useEnvoiUnique } from './useEnvoiUnique'
 import { useFocusInvalide } from './useFocusInvalide'
 
 export function ResetPasswordPage() {
@@ -18,6 +19,7 @@ export function ResetPasswordPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [tentative, setTentative] = useState(0)
   const formRef = useFocusInvalide(tentative)
+  const verrou = useEnvoiUnique()
   const reset = useMutation({
     mutationFn: (body: { token: string; password: string }) =>
       api<void>('/auth/password/reset', { method: 'POST', body }),
@@ -39,7 +41,7 @@ export function ResetPasswordPage() {
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!token || reset.isPending) return
+    if (!token || verrou.occupe()) return
     setMessage(null)
     const locales = {
       password: password.length >= 10 ? undefined : '10 caractères minimum.',
@@ -50,9 +52,11 @@ export function ResetPasswordPage() {
       setTentative((n) => n + 1)
       return
     }
+    verrou.prendre()
     reset.mutate(
       { token, password },
       {
+        onSettled: verrou.liberer,
         onSuccess: () => navigate('/connexion', { state: { flash: 'Mot de passe modifié. Connectez-vous.' } }),
         onError: (err) => {
           const champ = err instanceof ApiError ? issuesFor(err.issues, 'password') : undefined

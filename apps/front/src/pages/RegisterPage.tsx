@@ -5,6 +5,7 @@ import { ApiError, issuesFor } from '../lib/api'
 import { useRegister } from '../lib/auth'
 import { Alert, Button, Field, PageHeader } from '../ui'
 import styles from './AuthPage.module.css'
+import { useEnvoiUnique } from './useEnvoiUnique'
 import { useFocusInvalide } from './useFocusInvalide'
 
 type Erreurs = { email?: string; password?: string; confirmation?: string }
@@ -19,10 +20,11 @@ export function RegisterPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [tentative, setTentative] = useState(0)
   const formRef = useFocusInvalide(tentative)
+  const verrou = useEnvoiUnique()
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
-    if (register.isPending) return
+    if (verrou.occupe()) return
     setMessage(null)
     const locales: Erreurs = {
       email: email.trim() ? undefined : 'Saisissez votre adresse e-mail.',
@@ -34,9 +36,11 @@ export function RegisterPage() {
       setTentative((n) => n + 1)
       return
     }
+    verrou.prendre()
     register.mutate(
       { email: email.trim(), password },
       {
+        onSettled: verrou.liberer,
         onSuccess: () => navigate('/projets'),
         onError: (err) => {
           const issues = err instanceof ApiError ? err.issues : []

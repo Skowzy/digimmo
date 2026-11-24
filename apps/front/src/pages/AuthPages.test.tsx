@@ -1,8 +1,11 @@
-import { screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { axe } from 'vitest-axe'
 import { describe, expect, it } from 'vitest'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createBrowserRouter, RouterProvider } from 'react-router'
+import { routes } from '../app/routes'
 import { server } from '../test/server'
 import { renderApp } from '../test/render'
 
@@ -146,7 +149,6 @@ describe('réinitialisation', () => {
     const { router } = renderApp('/mot-de-passe/reinitialiser?token=abc')
     await userEvent.type(await screen.findByLabelText('Nouveau mot de passe'), '1234567890')
     await userEvent.type(screen.getByLabelText('Confirmation du mot de passe'), '1234567890')
-    expect(window.location.search).not.toContain('abc')
     expect(router.state.location.search).not.toContain('abc')
     expect(document.head.querySelector('meta[name="referrer"][content="no-referrer"]')).not.toBeNull()
     await userEvent.click(screen.getByRole('button', { name: 'Modifier le mot de passe' }))
@@ -179,5 +181,82 @@ describe('réinitialisation', () => {
     const { container } = renderApp('/mot-de-passe/reinitialiser?token=abc')
     await screen.findByLabelText('Nouveau mot de passe')
     expect(await axe(container)).toHaveNoViolations()
+  })
+})
+
+describe('anti double envoi', () => {
+  async function deuxSubmits(chemin: string, remplir: () => Promise<void>) {
+    renderApp(chemin)
+    await remplir()
+    const form = document.querySelector('form') as HTMLFormElement
+    // Même tick, sans rendu intermédiaire : isPending (rendu) est encore faux au 2e envoi.
+    act(() => {
+      for (let i = 0; i < 2; i++) form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    await new Promise((r) => setTimeout(r, 50))
+  }
+  const taper = async (label: string, v: string) =>
+    userEvent.type(await screen.findByLabelText(label), v)
+  const compteur = (method: 'post', url: string, res: () => Response) => {
+    const c = { n: 0 }
+    server.use(http[method](url, () => { c.n++; return res() }))
+    return c
+  }
+
+  it('connexion', async () => {
+    avecVisiteur()
+    const c = compteur('post', '/api/auth/login', () => HttpResponse.json(user))
+    await deuxSubmits('/connexion', async () => {
+      await taper('Adresse e-mail', 'a@b.fr')
+      await taper('Mot de passe', 'secret-secret')
+    })
+    expect(c.n).toBe(1)
+  })
+  it('inscription', async () => {
+    avecVisiteur()
+    const c = compteur('post', '/api/auth/register', () => HttpResponse.json(user, { status: 201 }))
+    await deuxSubmits('/inscription', async () => {
+      await taper('Adresse e-mail', 'a@b.fr')
+      await taper('Mot de passe', '1234567890')
+      await taper('Confirmation du mot de passe', '1234567890')
+    })
+    expect(c.n).toBe(1)
+  })
+  it('mot de passe oublié', async () => {
+    avecVisiteur()
+    const c = compteur('post', '/api/auth/password/forgot', () => HttpResponse.json({ message: MSG_FORGOT }, { status: 202 }))
+    await deuxSubmits('/mot-de-passe-oublie', async () => {
+      await taper('Adresse e-mail', 'a@b.fr')
+    })
+    expect(c.n).toBe(1)
+  })
+  it('réinitialisation', async () => {
+    avecVisiteur()
+    const c = compteur('post', '/api/auth/password/reset', () => new HttpResponse(null, { status: 204 }))
+    await deuxSubmits('/mot-de-passe/reinitialiser?token=abc', async () => {
+      await taper('Nouveau mot de passe', '1234567890')
+      await taper('Confirmation du mot de passe', '1234567890')
+    })
+    expect(c.n).toBe(1)
+  })
+})
+
+describe('jeton et historique du navigateur', () => {
+  it("remplace l'entrée d'historique sans en créer", async () => {
+    avecVisiteur()
+    window.history.pushState({}, '', '/mot-de-passe/reinitialiser?token=abc')
+    const longueur = window.history.length
+    const router = createBrowserRouter(routes)
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    )
+    await screen.findByLabelText('Nouveau mot de passe')
+    await waitFor(() => expect(window.location.search).not.toContain('abc'))
+    expect(window.location.pathname).toBe('/mot-de-passe/reinitialiser')
+    expect(window.history.length).toBe(longueur)
+    router.dispose()
+    window.history.replaceState({}, '', '/')
   })
 })

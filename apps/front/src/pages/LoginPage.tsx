@@ -6,6 +6,7 @@ import { ApiError, issuesFor } from '../lib/api'
 import { cheminSuite, useLogin } from '../lib/auth'
 import { Alert, Button, Field, PageHeader } from '../ui'
 import styles from './AuthPage.module.css'
+import { useEnvoiUnique } from './useEnvoiUnique'
 import { useFocusInvalide } from './useFocusInvalide'
 
 export function LoginPage() {
@@ -18,10 +19,11 @@ export function LoginPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [tentative, setTentative] = useState(0)
   const formRef = useFocusInvalide(tentative)
+  const verrou = useEnvoiUnique()
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
-    if (login.isPending) return
+    if (verrou.occupe()) return
     setMessage(null)
     const locales = {
       email: email.trim() ? undefined : "Saisissez votre adresse e-mail.",
@@ -32,9 +34,11 @@ export function LoginPage() {
       setTentative((n) => n + 1)
       return
     }
+    verrou.prendre()
     login.mutate(
       { email: email.trim(), password },
       {
+        onSettled: verrou.liberer,
         onSuccess: () => navigate(cheminSuite(params.get('suite'))),
         onError: (err) => {
           const issues = err instanceof ApiError ? err.issues : []
