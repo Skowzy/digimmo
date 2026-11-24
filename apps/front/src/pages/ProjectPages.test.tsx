@@ -116,6 +116,41 @@ describe('page projet', () => {
     expect(screen.getByRole('link', { name: 'Retour au tableau de bord' })).toHaveAttribute('href', '/projets')
   })
 
+  it('404 avec la politique de production : une seule requête', async () => {
+    let appels = 0
+    server.use(
+      http.get('/api/auth/me', () => HttpResponse.json(me)),
+      http.get('/api/projects/:id', () => { appels++; return HttpResponse.json({ message: 'Projet introuvable.' }, { status: 404 }) }),
+      http.get('/api/projects/:id/plan', () => HttpResponse.json({ message: 'Projet introuvable.' }, { status: 404 })),
+    )
+    renderApp('/projets/zzz', {})
+    expect(await screen.findByText('Projet introuvable.')).toBeInTheDocument()
+    expect(appels).toBe(1)
+  })
+
+  it('500 avec la politique de production : réessayé', async () => {
+    let appels = 0
+    server.use(
+      http.get('/api/auth/me', () => HttpResponse.json(me)),
+      http.get('/api/projects/:id', () => { appels++; return HttpResponse.json({ message: 'Boum.' }, { status: 500 }) }),
+      http.get('/api/projects/:id/plan', () => HttpResponse.json({ message: 'Boum.' }, { status: 500 })),
+    )
+    renderApp('/projets/zzz', { retryDelay: 0 })
+    expect(await screen.findByText('Boum.')).toBeInTheDocument()
+    expect(appels).toBe(3)
+  })
+
+  it('échec d\'une actualisation : la page reste, avertissement non bloquant', async () => {
+    mockProjet([])
+    const { queryClient } = renderApp('/projets/p1')
+    expect(await screen.findByRole('heading', { name: 'Alpha' })).toBeInTheDocument()
+    server.use(http.get('/api/projects/:id', () => HttpResponse.json({ message: 'Boum.' }, { status: 500 })))
+    await queryClient.invalidateQueries({ queryKey: ['projects', 'p1'], exact: true })
+    expect(await screen.findByText("Impossible d'actualiser le projet.")).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Alpha' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Largeur (m)')).toBeInTheDocument()
+  })
+
   it('axe', async () => {
     mockProjet([v('error', 'Erreur B')])
     const { container } = renderApp('/projets/p1')

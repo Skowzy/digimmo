@@ -23,7 +23,7 @@ export function ProjectPage() {
   const update = useUpdateProject(id)
   const [enregistre, setEnregistre] = useState(false)
 
-  if (projet.isError) {
+  if (!projet.data && projet.isError) {
     const introuvable = projet.error instanceof ApiError && projet.error.status === 404
     return (
       <div>
@@ -44,6 +44,7 @@ export function ProjectPage() {
     <div>
       <FlashMessage />
       <PageHeader title={p.name} />
+      {projet.isError && <Alert tone="warning">Impossible d'actualiser le projet.</Alert>}
       <div className={styles.bientot}><p>L'éditeur arrive bientôt</p></div>
       <section className={styles.section} aria-labelledby="violations">
         <h2 id="violations">Contrôle du plan</h2>
