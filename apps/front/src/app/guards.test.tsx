@@ -57,9 +57,10 @@ describe('gardes de routes', () => {
   })
 
   it('401 simultanés : une seule redirection et un seul vidage du cache', async () => {
+    let expire = false
     server.use(
       http.get('/api/auth/me', connecte('user')),
-      http.get('/api/projects', non),
+      http.get('/api/projects', () => (expire ? non() : HttpResponse.json([]))),
     )
     const { router, queryClient } = renderApp('/projets')
     await screen.findByRole('heading', { name: 'Mes projets' })
@@ -70,6 +71,7 @@ describe('gardes de routes', () => {
       return original(...(args as Parameters<typeof original>))
     })
     const clear = vi.spyOn(queryClient, 'clear')
+    expire = true
     await act(async () => {
       await Promise.all([1, 2, 3].map(() => api('/projects').catch(() => undefined)))
     })
