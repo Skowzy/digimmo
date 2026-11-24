@@ -76,7 +76,14 @@ export const ruleParamsSchema = z.strictObject({
   setbackStreetCm: z.number().int().min(0).max(5000),
   setbackSidesCm: z.number().int().min(0).max(5000),
   maxFootprintPct: z.number().min(1).max(100),
-  minAreasM2: z.partialRecord(roomTypeSchema, z.number().min(0).max(100)),
+  // zod retire la clé __proto__ au parsing du record : on la détecte sur l'entrée brute
+  minAreasM2: z
+    .unknown()
+    .superRefine((o, ctx) => {
+      if (typeof o === 'object' && o !== null && Object.hasOwn(o, '__proto__'))
+        ctx.addIssue({ code: 'custom', message: 'clé __proto__ interdite' });
+    })
+    .pipe(z.partialRecord(roomTypeSchema, z.number().min(0).max(100))),
 });
 
 export const siteSchema = z
@@ -87,6 +94,22 @@ export const siteSchema = z
   .superRefine((s, ctx) => {
     if (s.streetEdge > s.boundary.length - 1)
       ctx.addIssue({ code: 'custom', path: ['streetEdge'], message: `streetEdge doit être dans [0, ${s.boundary.length - 1}]` });
+    const pts = s.boundary;
+    let area2 = 0;
+    let sign = 0;
+    let convex = true;
+    pts.forEach((p, i) => {
+      const q = pts[(i + 1) % pts.length]!;
+      const r = pts[(i + 2) % pts.length]!;
+      area2 += p.x * q.y - q.x * p.y;
+      const cross = (q.x - p.x) * (r.y - q.y) - (q.y - p.y) * (r.x - q.x);
+      if (cross !== 0) {
+        if (sign !== 0 && Math.sign(cross) !== sign) convex = false;
+        sign = Math.sign(cross);
+      }
+    });
+    if (area2 === 0) ctx.addIssue({ code: 'custom', path: ['boundary'], message: 'le terrain doit avoir une surface non nulle' });
+    else if (!convex) ctx.addIssue({ code: 'custom', path: ['boundary'], message: 'le terrain doit être convexe' });
   });
 
 // Garde de dérive : le schéma doit rester assignable aux types du domaine.
