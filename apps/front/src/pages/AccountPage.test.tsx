@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { axe } from 'vitest-axe'
@@ -113,6 +113,63 @@ describe('mon compte', () => {
     expect(await screen.findByText('Votre compte a été supprimé.')).toBeInTheDocument()
     expect(corps).toEqual([{ password: 'secret123' }])
     expect(router.state.location.pathname).toBe('/')
+  })
+
+  it('export : si le clic échoue, le lien est retiré et l\'URL révoquée', async () => {
+    mock()
+    server.use(http.get('/api/me/export', () => HttpResponse.json({ projects: [] })))
+    const revoke = vi.fn()
+    Object.assign(URL, { createObjectURL: () => 'blob:y', revokeObjectURL: revoke })
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => { throw new Error('boum') })
+    renderApp('/compte')
+    await userEvent.click(await screen.findByRole('button', { name: 'Exporter mes données' }))
+    await waitFor(() => expect(revoke).toHaveBeenCalledWith('blob:y'))
+    expect(document.querySelector('a[download]')).toBeNull()
+  })
+
+  it('suppression : double clic => un seul DELETE', async () => {
+    mock()
+    let appels = 0
+    server.use(http.delete('/api/me', async () => { appels++; return new HttpResponse(null, { status: 204 }) }))
+    renderApp('/compte')
+    await userEvent.click(await screen.findByRole('button', { name: 'Supprimer mon compte' }))
+    const dialogue = screen.getByRole('dialog')
+    await userEvent.type(within(dialogue).getByLabelText('Mot de passe'), 'secret123')
+    const bouton = within(dialogue).getByRole('button', { name: 'Supprimer définitivement' })
+    act(() => { bouton.click(); bouton.click() })
+    expect(await screen.findByText('Votre compte a été supprimé.')).toBeInTheDocument()
+    expect(appels).toBe(1)
+  })
+
+  it('suppression : Entrée dans le champ envoie le formulaire', async () => {
+    mock()
+    let appels = 0
+    server.use(http.delete('/api/me', () => { appels++; return new HttpResponse(null, { status: 204 }) }))
+    renderApp('/compte')
+    await userEvent.click(await screen.findByRole('button', { name: 'Supprimer mon compte' }))
+    await userEvent.type(within(screen.getByRole('dialog')).getByLabelText('Mot de passe'), 'secret123{Enter}')
+    expect(await screen.findByText('Votre compte a été supprimé.')).toBeInTheDocument()
+    expect(appels).toBe(1)
+  })
+
+  it('suppression : mot de passe vide => focus sur le champ', async () => {
+    mock()
+    renderApp('/compte')
+    await userEvent.click(await screen.findByRole('button', { name: 'Supprimer mon compte' }))
+    const dialogue = screen.getByRole('dialog')
+    await userEvent.click(within(dialogue).getByRole('button', { name: 'Supprimer définitivement' }))
+    await waitFor(() => expect(within(dialogue).getByLabelText('Mot de passe')).toHaveFocus())
+  })
+
+  it('suppression : Annuler désactivé pendant l\'envoi', async () => {
+    mock()
+    server.use(http.delete('/api/me', async () => { await new Promise((r) => setTimeout(r, 200)); return new HttpResponse(null, { status: 204 }) }))
+    renderApp('/compte')
+    await userEvent.click(await screen.findByRole('button', { name: 'Supprimer mon compte' }))
+    const dialogue = screen.getByRole('dialog')
+    await userEvent.type(within(dialogue).getByLabelText('Mot de passe'), 'x{Enter}')
+    await waitFor(() => expect(within(dialogue).getByRole('button', { name: 'Annuler' })).toBeDisabled())
+    await screen.findByText('Votre compte a été supprimé.')
   })
 
   it('axe sans violation, y compris modale ouverte', async () => {
