@@ -28,7 +28,7 @@ export function DesignSystemPage() {
         <div className={styles.row}>
           {COULEURS.map(([nom, role]) => (
             <div key={nom} className={styles.sw}>
-              <div className={styles.chip} style={{ background: `var(--${nom})` }} />
+              <div className={`${styles.chip} ${styles[`chip-${nom}`]}`} />
               <code>{nom}</code>
               {role && <span>{role}</span>}
               <br />
@@ -40,8 +40,8 @@ export function DesignSystemPage() {
 
       <section className={styles.section} aria-labelledby="ds-typo">
         <h2 id="ds-typo">Typographie</h2>
-        <p style={{ fontFamily: 'var(--font-titre)', fontSize: 24, fontWeight: 600, margin: 0 }}>Maison Dupont</p>
-        <p style={{ fontFamily: 'var(--font-titre)', fontStyle: 'italic', margin: 0 }}>Plan du rez-de-chaussée</p>
+        <p className={styles.titre}>Maison Dupont</p>
+        <p className={styles.sousTitre}>Plan du rez-de-chaussée</p>
         <p>Ajoutez une pièce puis faites-la glisser sur le terrain.</p>
         <p className={styles.cote}>4,20 m × 3,60 m · 15,12 m²</p>
       </section>
@@ -65,7 +65,7 @@ export function DesignSystemPage() {
           <Button disabled>Désactivé</Button>
           <Button loading>Chargement</Button>
         </div>
-        <div className={styles.row} style={{ marginTop: 8 }}>
+        <div className={`${styles.row} ${styles.rangeeSuivante}`}>
           <Button size="sm">+ Pièce</Button>
           <Button size="sm" variant="secondary">Dupliquer</Button>
           <Button size="sm" variant="ghost">Détails</Button>
@@ -104,7 +104,7 @@ export function DesignSystemPage() {
 
       <section className={styles.section} aria-labelledby="ds-alertes">
         <h2 id="ds-alertes">Alertes</h2>
-        <div style={{ display: 'grid', gap: 8 }}>
+        <div className={styles.alertes}>
           <Alert tone="error" title="Enregistrement impossible">Le serveur ne répond pas.</Alert>
           <Alert tone="warning">L'emprise approche du maximum autorisé.</Alert>
           <Alert tone="info">Les cotes sont exprimées en mètres.</Alert>

@@ -6,3 +6,16 @@
 .sw code { font-family: inherit; display: block; font-weight: 500; }
 .toolbar { display: flex; gap: 2px; background: var(--papier-2); padding: var(--esp-1); width: max-content; border: 1px solid var(--trait); }
 .cote { font-family: var(--font-cote); font-size: 12px; }
+.chip-papier { background: var(--papier); }
+.chip-papier-2 { background: var(--papier-2); }
+.chip-trait { background: var(--trait); }
+.chip-encre { background: var(--encre); }
+.chip-encre-2 { background: var(--encre-2); }
+.chip-sanguine { background: var(--sanguine); }
+.chip-sauge { background: var(--sauge); }
+.chip-ocre { background: var(--ocre); }
+.chip-blanc { background: var(--blanc); }
+.titre { font-family: var(--font-titre); font-size: 24px; font-weight: 600; margin: 0; }
+.sousTitre { font-family: var(--font-titre); font-style: italic; margin: 0; }
+.rangeeSuivante { margin-top: var(--esp-2); }
+.alertes { display: grid; gap: var(--esp-2); }
