@@ -1,5 +1,6 @@
 import type { INestApplication } from '@nestjs/common';
 import { getConnectionToken } from '@nestjs/mongoose';
+import { ThrottlerStorage, ThrottlerStorageService } from '@nestjs/throttler';
 import { Test } from '@nestjs/testing';
 import { getDataSourceToken } from '@nestjs/typeorm';
 import type { Connection } from 'mongoose';
@@ -15,12 +16,14 @@ export type SentMail = { to: string; subject: string; text: string };
 /** Courriers « envoyés » pendant les tests (alimenté par Task 5). */
 export const outbox: SentMail[] = [];
 
-/**
- * Point d'extension : Task 4 y remettra à zéro le stockage du throttler
- * (limitation de débit) pour que les tests ne se polluent pas entre eux.
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function resetThrottler(_app: INestApplication): Promise<void> {
+/** Vide le stockage du throttler pour que les tests ne se polluent pas. */
+function resetThrottler(app: INestApplication): Promise<void> {
+  const storage = app.get<ThrottlerStorageService>(ThrottlerStorage);
+  storage.storage.clear();
+  // Les compteurs sont recalculés depuis `hitExpirations` (champ privé) : à vider aussi.
+  (
+    storage as unknown as { hitExpirations: Map<string, unknown> }
+  ).hitExpirations.clear();
   return Promise.resolve();
 }
 
