@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { resetSession } from '../app/resetSession'
@@ -42,13 +42,20 @@ export function AccountPage() {
   const [tentative, setTentative] = useState(0)
   const formRef = useFocusInvalide(tentative)
 
+  const supprime = useRef(false)
+
+  // Réinitialiser `['me']` seulement une fois la page quittée : sinon RequireAuth renverrait vers /connexion.
+  useEffect(() => () => {
+    if (supprime.current) resetSession(queryClient)
+  }, [queryClient])
+
   const exporter = useMutation({
     mutationFn: async () => telecharger(await api<unknown>('/me/export')),
   })
   const suppression = useMutation({
     mutationFn: (password: string) => api<void>('/me', { method: 'DELETE', body: { password } }),
     onSuccess: () => {
-      resetSession(queryClient)
+      supprime.current = true
       void navigate('/', {
         replace: true,
         state: { flash: 'Votre compte a été supprimé.' },

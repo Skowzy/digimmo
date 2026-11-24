@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router'
+import { useEffect, useRef } from 'react'
+import { useLocation, useNavigate } from 'react-router'
 import { resetSession } from '../app/resetSession'
 import { api, ApiError } from './api'
 
@@ -35,12 +36,26 @@ export const useRegister = () => useAuthMutation('/auth/register')
 export function useLogout() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const sortie = useRef(false)
+
+  // Réinitialiser `['me']` seulement une fois sur l'accueil : sinon RequireAuth renverrait vers /connexion.
+  useEffect(() => {
+    if (sortie.current && pathname === '/') {
+      sortie.current = false
+      resetSession(queryClient)
+    }
+  }, [pathname, queryClient])
+
   return useMutation({
     mutationFn: () => api<void>('/auth/logout', { method: 'POST' }),
     // En cas d'échec réseau/serveur, la session est aussi réinitialisée localement.
     onSettled: () => {
-      resetSession(queryClient)
-      void navigate('/')
+      if (pathname === '/') resetSession(queryClient)
+      else {
+        sortie.current = true
+        void navigate('/')
+      }
     },
   })
 }
