@@ -2,7 +2,7 @@ import * as os from 'node:os';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { SessionGuard } from './auth/session.guard';
@@ -30,19 +30,15 @@ import { PlanDoc, PlanSchema } from './plans/plan.schema';
       }),
     }),
     MongooseModule.forFeature([{ name: PlanDoc.name, schema: PlanSchema }]),
-    // Aucune limite par défaut : seules les routes avec @Throttle sont limitées.
+    // Le garde n'est posé (@UseGuards(ThrottlerGuard)) que sur les routes avec @Throttle :
+    // les autres ne sont ni comptées ni annotées d'en-têtes X-RateLimit.
     ThrottlerModule.forRoot({
       errorMessage: 'Trop de tentatives. Réessayez dans une minute.',
-      throttlers: [
-        { name: 'default', ttl: 60_000, limit: Number.MAX_SAFE_INTEGER },
-      ],
+      throttlers: [{ name: 'default', ttl: 60_000, limit: 60 }],
     }),
     AuthModule,
   ],
   controllers: [HealthController],
-  providers: [
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
-    { provide: APP_GUARD, useClass: SessionGuard },
-  ],
+  providers: [{ provide: APP_GUARD, useClass: SessionGuard }],
 })
 export class AppModule {}

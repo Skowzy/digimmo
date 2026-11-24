@@ -36,11 +36,14 @@ export class SessionGuard implements CanActivate {
     if (typeof token !== 'string' || token === '') throw this.denied();
 
     let sub: unknown;
+    let iat: unknown;
     try {
-      const payload = await this.jwt.verifyAsync<{ sub?: unknown }>(token, {
-        algorithms: ['HS256'],
-      });
+      const payload = await this.jwt.verifyAsync<{
+        sub?: unknown;
+        iat?: unknown;
+      }>(token, { algorithms: ['HS256'] });
       sub = payload.sub;
+      iat = payload.iat;
     } catch {
       throw this.denied();
     }
@@ -54,6 +57,12 @@ export class SessionGuard implements CanActivate {
       throw this.denied();
     }
     if (!user) throw this.denied();
+    // Session émise avant le dernier changement de mot de passe : refusée.
+    // (`iat` est en secondes : même seconde que le changement = acceptée.)
+    if (user.passwordChangedAt) {
+      const changedAt = Math.floor(user.passwordChangedAt.getTime() / 1000);
+      if (typeof iat !== 'number' || iat < changedAt) throw this.denied();
+    }
     req.user = user;
     return true;
   }

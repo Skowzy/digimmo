@@ -15,4 +15,9 @@ describe('GET /api/health', () => {
     expect(res.body).toEqual({ status: 'ok' });
     expect(res.headers['x-content-type-options']).toBe('nosniff');
   });
+
+  it('ne limite pas le débit des routes sans @Throttle (pas d’en-tête X-RateLimit)', async () => {
+    const res = await ctx.http.get('/api/health').expect(200);
+    expect(res.headers['x-ratelimit-limit']).toBeUndefined();
+  });
 });

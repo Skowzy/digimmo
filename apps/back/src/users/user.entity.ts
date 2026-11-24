@@ -19,6 +19,10 @@ export class User {
   @Column({ type: 'varchar' })
   passwordHash!: string;
 
+  /** Les sessions émises avant cette date sont refusées (changement de mot de passe). */
+  @Column({ type: 'timestamptz', nullable: true })
+  passwordChangedAt!: Date | null;
+
   @Column({ type: 'varchar', default: 'user' })
   role!: UserRole;
 

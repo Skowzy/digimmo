@@ -9,11 +9,12 @@ import * as request from 'supertest';
 import type { App } from 'supertest/types';
 import { AppModule } from '../../src/app.module';
 import { loadEnv } from '../../src/config/env';
+import { MAIL_SENDER, type SentMail } from '../../src/mail/mail.service';
 import { configureApp } from '../../src/configure-app';
 
-export type SentMail = { to: string; subject: string; text: string };
+export type { SentMail };
 
-/** Courriers « envoyés » pendant les tests (alimenté par Task 5). */
+/** Courriers « envoyés » pendant les tests. */
 export const outbox: SentMail[] = [];
 
 /** Vide le stockage du throttler pour que les tests ne se polluent pas. */
@@ -35,7 +36,15 @@ export async function createTestApp(): Promise<{
 }> {
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
-  }).compile();
+  })
+    .overrideProvider(MAIL_SENDER)
+    .useValue({
+      send(mail: SentMail) {
+        outbox.push(mail);
+        return Promise.resolve();
+      },
+    })
+    .compile();
   const app = moduleRef.createNestApplication({ bodyParser: false });
   configureApp(app, loadEnv());
   await app.init();
