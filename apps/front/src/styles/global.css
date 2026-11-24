@@ -1,0 +1,40 @@
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-serif/500.css';
+@import '@fontsource/ibm-plex-serif/600.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  background: var(--papier);
+  color: var(--encre);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-titre);
+}
+
+.grille {
+  background-color: var(--papier);
+  background-image:
+    linear-gradient(var(--papier-2) 1px, transparent 1px),
+    linear-gradient(90deg, var(--papier-2) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--encre);
+  outline-offset: 2px;
+}

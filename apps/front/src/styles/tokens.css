@@ -1,0 +1,24 @@
+:root {
+  --papier: #f4efe4;
+  --papier-2: #ebe4d4;
+  --trait: #c9bfa8;
+  --encre: #2b3a55;
+  --encre-2: #5a6680;
+  --sanguine: #a33a2f;
+  --sauge: #3f6b41;
+  --ocre: #845a10;
+  --blanc: #fbf8f1;
+
+  --font-titre: 'IBM Plex Serif', Georgia, serif;
+  --font-ui: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-cote: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --esp-1: 4px;
+  --esp-2: 8px;
+  --esp-3: 12px;
+  --esp-4: 16px;
+  --esp-5: 24px;
+  --esp-6: 32px;
+
+  --rayon: 3px;
+}
