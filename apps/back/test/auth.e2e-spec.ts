@@ -173,9 +173,12 @@ describe('Authentification', () => {
         .send({ email: 'x@example.com', password: 'whatever' })
         .expect(401);
     }
-    await ctx.http
+    const res = await ctx.http
       .post('/api/auth/login')
       .send({ email: 'x@example.com', password: 'whatever' })
       .expect(429);
+    expect(bodyOf(res).message).toBe(
+      'Trop de tentatives. Réessayez dans une minute.',
+    );
   });
 });

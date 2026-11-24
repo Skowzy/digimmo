@@ -31,9 +31,12 @@ import { PlanDoc, PlanSchema } from './plans/plan.schema';
     }),
     MongooseModule.forFeature([{ name: PlanDoc.name, schema: PlanSchema }]),
     // Aucune limite par défaut : seules les routes avec @Throttle sont limitées.
-    ThrottlerModule.forRoot([
-      { name: 'default', ttl: 60_000, limit: Number.MAX_SAFE_INTEGER },
-    ]),
+    ThrottlerModule.forRoot({
+      errorMessage: 'Trop de tentatives. Réessayez dans une minute.',
+      throttlers: [
+        { name: 'default', ttl: 60_000, limit: Number.MAX_SAFE_INTEGER },
+      ],
+    }),
     AuthModule,
   ],
   controllers: [HealthController],
