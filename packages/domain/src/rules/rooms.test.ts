@@ -23,4 +23,8 @@ describe('règles des pièces', () => {
     expect(checkUpperSupported(rdc, r1(800))).toEqual([]);
     expect(checkUpperSupported(rdc, r1(900))[0]).toMatchObject({ code: 'UPPER_NOT_SUPPORTED', level: 'r1', message: '« Ch. 2 » (étage) n\'est pas au-dessus du rez-de-chaussée.' });
   });
+  it('sdb de 1,11 m² exactement (100×111) avec minimum 1,11 → valide (pas d’erreur flottante)', () => {
+    const l: Level = { id: 'rdc', openings: [], furniture: [], rooms: [{ id: 's', type: 'sdb', name: 'SdB', rect: { x: 0, y: 0, w: 100, h: 111 } }] };
+    expect(checkRoomAreas(l, { ...DEFAULT_RULE_PARAMS, minAreasM2: { sdb: 1.11 } })).toEqual([]);
+  });
 });

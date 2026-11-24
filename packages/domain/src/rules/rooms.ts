@@ -22,9 +22,10 @@ export function checkRoomAreas(level: Level, params: RuleParams): Violation[] {
   for (const room of level.rooms) {
     const minM2 = params.minAreasM2[room.type];
     if (minM2 === undefined) continue;
+    const minCm2 = Math.round(minM2 * 10_000);
     const a = area(room.rect);
-    if (a < minM2 * 10_000) {
-      out.push({ code: 'ROOM_MIN_AREA', severity: 'error', message: `« ${room.name} » fait ${formatArea(a)} : minimum ${formatArea(minM2 * 10_000)} pour ce type de pièce.`, refs: [room.id], level: level.id });
+    if (a < minCm2) {
+      out.push({ code: 'ROOM_MIN_AREA', severity: 'error', message: `« ${room.name} » fait ${formatArea(a)} : minimum ${formatArea(minCm2)} pour ce type de pièce.`, refs: [room.id], level: level.id });
     }
   }
   return out;
