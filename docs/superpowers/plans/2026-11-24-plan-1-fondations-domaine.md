@@ -61,7 +61,7 @@ packages/domain/
 
 ---
 
-### Tâche 1 : Monorepo npm workspaces
+### Task 1: Monorepo npm workspaces
 
 **Files :**
 - Move : `digimmo-back/` → `apps/back/`, `digimmo-front/` → `apps/front/`
@@ -118,7 +118,7 @@ git add -A && git commit -m "chore: passage en monorepo npm workspaces (apps/bac
 
 ---
 
-### Tâche 2 : Package `@digimmo/domain` (squelette testable) + CI
+### Task 2: Package `@digimmo/domain` (squelette testable) + CI
 
 **Files :**
 - Create : `packages/domain/{package.json,tsconfig.json,tsup.config.ts,vitest.config.ts,src/index.ts,src/units.ts,src/units.test.ts}`
@@ -179,7 +179,7 @@ git add -A && git commit -m "feat(domain): package domain, formatage des unités
 
 ---
 
-### Tâche 3 : Types du domaine et paramètres par défaut
+### Task 3: Types du domaine et paramètres par défaut
 
 **Files :**
 - Create : `packages/domain/src/types.ts`, `packages/domain/src/defaults.ts`, `packages/domain/src/defaults.test.ts`
@@ -235,7 +235,7 @@ it('rectangularSite construit un rectangle horaire et choisit l’arête de voie
 
 ---
 
-### Tâche 4 : Géométrie
+### Task 4: Géométrie
 
 **Files :** Create `packages/domain/src/geometry.ts`, `packages/domain/src/geometry.test.ts`
 
@@ -288,7 +288,7 @@ it('coveredByUnion : couvert par deux rectangles adjacents', () => {
 
 ---
 
-### Tâche 5 : Segments de mur
+### Task 5: Segments de mur
 
 **Files :** Create `packages/domain/src/walls.ts`, `packages/domain/src/walls.test.ts`
 
@@ -334,7 +334,7 @@ it('findSegmentFor trouve le segment qui contient l’ouverture', () => {
 
 ---
 
-### Tâche 6 : Règles terrain (1 à 4)
+### Task 6: Règles terrain (1 à 4)
 
 **Files :** Create `packages/domain/src/rules/site.ts`, `packages/domain/src/rules/site.test.ts`
 
@@ -379,7 +379,7 @@ it('aucune pièce → aucune violation', () => expect(checkSite(site, DEFAULT_RU
 
 ---
 
-### Tâche 7 : Règles pièces (5 à 7)
+### Task 7: Règles pièces (5 à 7)
 
 **Files :** Create `packages/domain/src/rules/rooms.ts`, `packages/domain/src/rules/rooms.test.ts`
 
@@ -419,7 +419,7 @@ it('pièce d’étage qui déborde du RDC', () => {
 
 ---
 
-### Tâche 8 : Règles des ouvertures (8 à 10)
+### Task 8: Règles des ouvertures (8 à 10)
 
 **Files :** Create `packages/domain/src/rules/openings.ts`, `packages/domain/src/rules/openings.test.ts`
 
@@ -460,7 +460,7 @@ Chaque `...` est un `it` avec l'entrée décrite et l'assertion `expect(checkOpe
 
 ---
 
-### Tâche 9 : Règles meubles et escalier (11 à 14)
+### Task 9: Règles meubles et escalier (11 à 14)
 
 **Files :** Create `packages/domain/src/rules/furniture.ts`, `packages/domain/src/rules/furniture.test.ts`
 
@@ -498,7 +498,7 @@ Chaque `...` est un `it` avec l'entrée décrite et l'assertion sur les `code` (
 
 ---
 
-### Tâche 10 : Schéma Zod du format
+### Task 10: Schéma Zod du format
 
 **Files :** Create `packages/domain/src/schema.ts`, `packages/domain/src/schema.test.ts`
 
@@ -540,7 +540,7 @@ it('refuse une porte sans swing', ...);
 
 ---
 
-### Tâche 11 : `validatePlan` et API publique
+### Task 11: `validatePlan` et API publique
 
 **Files :** Create `packages/domain/src/validate.ts`, `packages/domain/src/validate.test.ts` ; Modify `packages/domain/src/index.ts`
 

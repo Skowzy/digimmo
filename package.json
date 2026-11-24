@@ -1,0 +1,12 @@
+{
+  "name": "digimmo",
+  "private": true,
+  "engines": { "node": ">=22.12" },
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "build": "npm run build -w @digimmo/domain && npm run build -w @digimmo/back -w @digimmo/front",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  }
+}
