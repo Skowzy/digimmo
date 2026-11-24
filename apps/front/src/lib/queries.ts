@@ -40,6 +40,9 @@ export function useDeleteProject() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => api<void>(`/projects/${id}`, { method: 'DELETE' }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['projects'] }),
+    onSuccess: (_data, id) => {
+      queryClient.removeQueries({ queryKey: ['projects', id] })
+      return queryClient.invalidateQueries({ queryKey: ['projects'], exact: true })
+    },
   })
 }

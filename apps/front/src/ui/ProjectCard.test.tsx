@@ -22,8 +22,8 @@ const plan: Plan = {
 }
 const v = (code: Violation['code'], severity: Violation['severity']): Violation => ({ code, severity, message: 'm', refs: [] })
 
-const rendre = (violations?: Violation[], onDelete?: () => void) =>
-  render(<MemoryRouter><ProjectCard project={project} plan={plan} violations={violations} onDelete={onDelete} /></MemoryRouter>)
+const rendre = (violations?: Violation[], onDelete?: () => void, planState?: 'loading' | 'error' | 'ok') =>
+  render(<MemoryRouter><ProjectCard project={project} plan={planState === 'ok' || !planState ? plan : undefined} violations={violations} planState={planState} onDelete={onDelete} /></MemoryRouter>)
 
 describe('ProjectCard', () => {
   it('nom en lien, surfaces et date', () => {
@@ -48,14 +48,21 @@ describe('ProjectCard', () => {
     rendre([v('ROOM_OVERLAP', 'error'), v('TOO_MANY_VIOLATIONS', 'warning')])
     expect(screen.getByText('200+ erreurs')).toBeInTheDocument()
   })
-  it('chargement : pas de pastille', () => {
-    rendre(undefined)
+  it('chargement : Maison — et pas de pastille', () => {
+    rendre(undefined, undefined, 'loading')
+    expect(screen.getByText('Terrain 600,00 m² · Maison —')).toBeInTheDocument()
     expect(screen.queryByText('Valide')).not.toBeInTheDocument()
+  })
+  it('erreur du plan : Aperçu indisponible, ni surface maison ni Valide', () => {
+    rendre(undefined, undefined, 'error')
+    expect(screen.getByText('Aperçu indisponible')).toBeInTheDocument()
+    expect(screen.queryByText('Valide')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Maison/)).not.toBeInTheDocument()
   })
   it('Supprimer appelle onDelete', async () => {
     const onDelete = vi.fn()
     rendre([], onDelete)
-    await userEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Supprimer Maison Dupont' }))
     expect(onDelete).toHaveBeenCalledTimes(1)
   })
   it('sans violation axe', async () => {

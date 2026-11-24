@@ -43,7 +43,9 @@ describe('tableau de bord', () => {
     mock([])
     renderApp('/projets')
     expect(await screen.findByText('Aucun projet pour l\'instant.')).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: 'Nouveau projet' }).length).toBeGreaterThan(0)
+    const liens = screen.getAllByRole('link', { name: 'Nouveau projet' })
+    expect(liens.length).toBe(2)
+    liens.forEach((l) => expect(l).toHaveAttribute('href', '/projets/nouveau'))
   })
 
   it('erreur de chargement : alerte', async () => {
@@ -60,7 +62,7 @@ describe('tableau de bord', () => {
     mock([projet('a', 'Alpha')])
     server.use(http.delete('/api/projects/:id', () => { deletes++; return new HttpResponse(null, { status: 204 }) }))
     renderApp('/projets')
-    await userEvent.click(await screen.findByRole('button', { name: 'Supprimer' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Supprimer Alpha' }))
     const dialogue = screen.getByRole('dialog')
     expect(dialogue).toHaveTextContent('Supprimer le projet « Alpha » ? Cette action est définitive.')
     await userEvent.click(within(dialogue).getByRole('button', { name: 'Annuler' }))
@@ -72,10 +74,14 @@ describe('tableau de bord', () => {
   it('confirmer : DELETE puis la carte disparaît', async () => {
     let projets = [projet('a', 'Alpha'), projet('b', 'Beta')]
     const supprimes: string[] = []
+    const plansDemandes: string[] = []
     server.use(
       http.get('/api/auth/me', () => HttpResponse.json(me)),
       http.get('/api/projects', () => HttpResponse.json(projets)),
-      http.get('/api/projects/:id/plan', () => HttpResponse.json({ plan, validation: { violations: [], checkedAt: 'x' } })),
+      http.get('/api/projects/:id/plan', ({ params }) => {
+        plansDemandes.push(params.id as string)
+        return HttpResponse.json({ plan, validation: { violations: [], checkedAt: 'x' } })
+      }),
       http.delete('/api/projects/:id', ({ params }) => {
         supprimes.push(params.id as string)
         projets = projets.filter((p) => p.id !== params.id)
@@ -83,11 +89,25 @@ describe('tableau de bord', () => {
       }),
     )
     renderApp('/projets')
-    await userEvent.click((await screen.findAllByRole('button', { name: 'Supprimer' }))[0]!)
+    await userEvent.click(await screen.findByRole('button', { name: 'Supprimer Alpha' }))
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Supprimer' }))
     await waitFor(() => expect(screen.queryByRole('link', { name: 'Alpha' })).not.toBeInTheDocument())
     expect(supprimes).toEqual(['a'])
+    expect(plansDemandes.filter((id) => id === 'a')).toHaveLength(1) // seulement le chargement initial
+    // le focus ne tombe pas sur <body> : il va au titre de la page
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1, name: 'Mes projets' }))
     expect(screen.getByRole('link', { name: 'Beta' })).toBeInTheDocument()
+  })
+
+  it('plan en erreur : carte signalée, pas de Valide', async () => {
+    server.use(
+      http.get('/api/auth/me', () => HttpResponse.json(me)),
+      http.get('/api/projects', () => HttpResponse.json([projet('a', 'Alpha')])),
+      http.get('/api/projects/:id/plan', () => HttpResponse.json({ message: 'x' }, { status: 500 })),
+    )
+    renderApp('/projets')
+    expect(await screen.findByText('Aperçu indisponible')).toBeInTheDocument()
+    expect(screen.queryByText('Valide')).not.toBeInTheDocument()
   })
 
   it('sans violation axe', async () => {

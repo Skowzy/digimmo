@@ -1,5 +1,6 @@
 export { Alert } from './Alert'
 export { Button } from './Button'
+export { ButtonLink } from './ButtonLink'
 export { Field } from './Field'
 export { Modal } from './Modal'
 export { PageHeader } from './PageHeader'

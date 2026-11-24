@@ -1,4 +1,5 @@
 import type { Plan, Site } from '@digimmo/domain'
+import styles from './PlanThumbnail.module.css'
 
 const MARGE = 4
 
@@ -20,7 +21,7 @@ export function PlanThumbnail({ site, plan, width = 190, height = 80 }: Props) {
   const pieces = plan?.levels.find((l) => l.id === 'rdc')?.rooms ?? []
 
   return (
-    <svg role="img" aria-label="Aperçu du plan" width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ color: 'var(--encre)' }}>
+    <svg role="img" aria-label="Aperçu du plan" width={width} height={height} viewBox={`0 0 ${width} ${height}`} className={styles.svg}>
       <polygon data-role="terrain" points={points} fill="none" stroke="currentColor" strokeWidth={1} strokeDasharray="4 3" />
       {pieces.map((r) => (
         <rect
