@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
+import { rectangularSite } from './defaults';
 import { parsePlan, ruleParamsSchema, siteSchema } from './schema';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Json = any;
 function set(obj: Json, path: string, value: unknown): Json {
   const c = JSON.parse(JSON.stringify(obj));
@@ -49,7 +51,8 @@ describe('parsePlan', () => {
     expect(parsePlan(set(valid, 'stairs', { rect: { x: 0, y: 0, w: 100, h: 200 } })).ok).toBe(false);
   });
   it('refuse une porte sans swing', () => {
-    const { swing, ...d } = door;
+    const d: Json = { ...door };
+    delete d.swing;
     expect(parsePlan(set(valid, 'levels.0.openings', [d])).ok).toBe(false);
   });
   it('refuse une fenêtre avec swing', () => {
@@ -94,4 +97,17 @@ describe('siteSchema', () => {
     expect(siteSchema.safeParse({ boundary: b, streetEdge: -1 }).success).toBe(false);
   });
   it('refuse moins de 3 sommets', () => expect(siteSchema.safeParse({ boundary: b.slice(0, 2), streetEdge: 0 }).success).toBe(false));
+});
+
+describe('restes plan 1', () => {
+  it('ruleParams : clé __proto__ dans minAreasM2 refusée', () =>
+    expect(ruleParamsSchema.safeParse(JSON.parse('{"setbackStreetCm":500,"setbackSidesCm":300,"maxFootprintPct":40,"minAreasM2":{"__proto__":5}}')).success).toBe(false));
+  it('site : aire nulle refusée', () =>
+    expect(siteSchema.safeParse({ boundary: [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 200, y: 0 }], streetEdge: 0 }).success).toBe(false));
+  it('site : polygone non convexe (en L) refusé', () =>
+    expect(siteSchema.safeParse({ boundary: [{ x: 0, y: 0 }, { x: 200, y: 0 }, { x: 200, y: 100 }, { x: 100, y: 100 }, { x: 100, y: 200 }, { x: 0, y: 200 }], streetEdge: 0 }).success).toBe(false));
+  it('site : rectangularSite accepté', () =>
+    expect(siteSchema.safeParse(rectangularSite(2000, 3000, 'north')).success).toBe(true));
+  it('site : sens anti-horaire accepté', () =>
+    expect(siteSchema.safeParse({ boundary: [{ x: 0, y: 0 }, { x: 0, y: 100 }, { x: 100, y: 100 }, { x: 100, y: 0 }], streetEdge: 0 }).success).toBe(true));
 });

@@ -31,7 +31,7 @@ Projet personnel, présenté pour le titre professionnel **Concepteur Développe
 Monorepo npm workspaces :
 
 ```
-packages/domain/   géométrie et règles métier, partagées (à venir)
+packages/domain/   géométrie et règles métier, partagées (compilée à l'installation)
 apps/back/         API NestJS
 apps/front/        application React + Vite
 docs/              conception et plans
@@ -39,18 +39,33 @@ docs/              conception et plans
 
 ## Démarrer en local
 
-Prérequis : Node.js 22.12+ et npm. (Docker sera nécessaire dès l'arrivée des bases de données.)
+Prérequis : Node.js 22.12+, npm et Docker (PostgreSQL, MongoDB, Mailpit).
 
 ```bash
-# Une seule installation, à la racine
+# Installation à la racine (compile aussi packages/domain via son script « prepare »)
 npm install
 
-# API (http://localhost:3000)
+# Variables d'environnement (valeurs de développement)
+cp .env.example .env
+
+# Bases de données et serveur de courriel de test
+docker compose up -d
+
+# Schéma PostgreSQL (migrations) : à refaire après chaque nouvelle migration
+npm run migration:run -w @digimmo/back
+
+# Catalogue de meubles + premier administrateur (facultatif : renseigner
+# ADMIN_EMAIL et ADMIN_PASSWORD (10 caractères minimum) dans .env ou devant la commande)
+ADMIN_EMAIL=moi@exemple.fr ADMIN_PASSWORD='un-mot-de-passe-solide' npm run seed -w @digimmo/back
+
+# API (http://localhost:3000, préfixe /api)
 npm run start:dev -w @digimmo/back
 
 # Front (http://localhost:5173)
 npm run dev -w @digimmo/front
 ```
+
+L'API ne crée pas les tables toute seule : sans l'étape de migration, elle démarre mais les requêtes échouent.
 
 Qualité, depuis la racine :
 
@@ -61,7 +76,8 @@ npm run typecheck
 npm run build
 ```
 
-Cette section sera mise à jour avec docker compose et les variables d'environnement (`.env.example`).
+Les courriers envoyés en local sont consultables dans Mailpit : http://localhost:8025.
+Les tests e2e de l'API (`npm run test:e2e -w @digimmo/back`) utilisent les bases de `docker compose` (base `digimmo_test`).
 
 ## Documentation
 
