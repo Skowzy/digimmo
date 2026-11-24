@@ -12,6 +12,9 @@ import type { User } from '../users/user.entity';
 import { SESSION_COOKIE } from './auth.constants';
 import { IS_PUBLIC_KEY } from './public.decorator';
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export type AuthenticatedRequest = Request & { user: User };
 
 @Injectable()
@@ -47,15 +50,11 @@ export class SessionGuard implements CanActivate {
     } catch {
       throw this.denied();
     }
-    if (typeof sub !== 'string') throw this.denied();
+    if (typeof sub !== 'string' || !UUID_RE.test(sub)) throw this.denied();
 
     // Seul `sub` est cru : l'utilisateur (et son rôle) est rechargé en base.
-    let user: User | null;
-    try {
-      user = await this.users.findById(sub);
-    } catch {
-      throw this.denied();
-    }
+    // Une panne de base remonte telle quelle (500), elle n'est pas une déconnexion.
+    const user = await this.users.findById(sub);
     if (!user) throw this.denied();
     // Session émise avant le dernier changement de mot de passe : refusée.
     // (`iat` est en secondes : même seconde que le changement = acceptée.)
