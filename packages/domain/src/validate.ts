@@ -8,17 +8,18 @@ import type { Plan, RuleParams, Site, Violation } from './types';
 export function validatePlan(site: Site, params: RuleParams, plan: Plan): Violation[] {
   const rdc = plan.levels.find((l) => l.id === 'rdc');
   const r1 = plan.levels.find((l) => l.id === 'r1');
-  const out: Violation[] = [...checkSite(site, params, rdc?.rooms ?? [])];
+  let out: Violation[] = checkSite(site, params, rdc?.rooms ?? []);
   for (const level of plan.levels) {
-    out.push(
-      ...checkRoomOverlaps(level),
-      ...checkRoomAreas(level, params),
-      ...checkOpenings(level),
-      ...checkFurniture(level, r1 ? (plan.stairs?.rect ?? null) : null),
+    // Pas de push(...spread) : un grand tableau dépasserait la limite de pile.
+    out = out.concat(
+      checkRoomOverlaps(level),
+      checkRoomAreas(level, params),
+      checkOpenings(level),
+      checkFurniture(level, r1 ? (plan.stairs?.rect ?? null) : null),
     );
   }
-  if (rdc && r1) out.push(...checkUpperSupported(rdc, r1));
-  out.push(...checkStairs(plan));
+  if (rdc && r1) out = out.concat(checkUpperSupported(rdc, r1));
+  out = out.concat(checkStairs(plan));
   const rank = (v: Violation) => (v.severity === 'error' ? 0 : 1);
   return out.sort((a, b) => rank(a) - rank(b));
 }

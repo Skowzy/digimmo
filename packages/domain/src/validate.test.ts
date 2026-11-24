@@ -51,4 +51,24 @@ describe('validatePlan', () => {
     expect(sev).toEqual([...sev].sort((a, b) => (a === b ? 0 : a === 'error' ? -1 : 1)));
     expect(sev).toContain('error');
   });
+  it('gros plan (500 meubles empilés) → pas de débordement de pile', () => {
+    const room = { id: 'a', type: 'autre' as const, name: 'A', rect: { x: 500, y: 500, w: 600, h: 400 } };
+    const furniture = Array.from({ length: 500 }, (_, i) => ({ id: `f${i}`, catalogId: 'x', label: `M${i}`, x: 510, y: 510, w: 50, d: 50, rotation: 0 as const }));
+    const plan: Plan = { levels: [{ id: 'rdc', rooms: [room], openings: [], furniture }], stairs: null };
+    const v = validatePlan(site, DEFAULT_RULE_PARAMS, plan);
+    expect(v.filter((x) => x.code === 'FURNITURE_OVERLAP')).toHaveLength((500 * 499) / 2);
+  });
+
+  it('erreurs avant alertes : FOOTPRINT_NEAR_MAX (émis en premier) passe après ROOM_OVERLAP', () => {
+    // Terrain 2000×3000 = 600 m² ; emprise ≈ 37,5 % (≥ 36 %, ≤ 40 %) avec deux pièces qui se chevauchent.
+    const rooms = [
+      { id: 'a', type: 'autre' as const, name: 'A', rect: { x: 500, y: 500, w: 1000, h: 1200 } },
+      { id: 'b', type: 'autre' as const, name: 'B', rect: { x: 500, y: 1600, w: 700, h: 1500 } },
+    ];
+    const plan: Plan = { levels: [{ id: 'rdc', rooms, openings: [], furniture: [] }], stairs: null };
+    const codes = validatePlan(site, DEFAULT_RULE_PARAMS, plan).map((v) => v.code);
+    expect(codes).toContain('FOOTPRINT_NEAR_MAX');
+    expect(codes.indexOf('ROOM_OVERLAP')).toBeGreaterThanOrEqual(0);
+    expect(codes.indexOf('ROOM_OVERLAP')).toBeLessThan(codes.indexOf('FOOTPRINT_NEAR_MAX'));
+  });
 });

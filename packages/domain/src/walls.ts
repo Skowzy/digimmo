@@ -36,7 +36,7 @@ export function computeWallSegments(rooms: Room[]): WallSegment[] {
       if (prev && prev.end === p && prev.roomIds.join() === ids.join()) prev.end = q;
       else line.push({ orientation: first.orientation, fixed: first.fixed, start: p, end: q, roomIds: ids, exterior: ids.length === 1 });
     }
-    out.push(...line);
+    for (const seg of line) out.push(seg);
   }
   return out.sort((s, t) =>
     (s.orientation === t.orientation ? 0 : s.orientation === 'h' ? -1 : 1) || s.fixed - t.fixed || s.start - t.start);
