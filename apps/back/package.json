@@ -8,9 +8,9 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "nest start --exec \"node --env-file-if-exists=../../.env\"",
-    "start:dev": "nest start --watch --exec \"node --env-file-if-exists=../../.env\"",
-    "start:debug": "nest start --debug --watch --exec \"node --env-file-if-exists=../../.env\"",
+    "start": "nest start --env-file ../../.env",
+    "start:dev": "nest start --watch --env-file ../../.env",
+    "start:debug": "nest start --debug --watch --env-file ../../.env",
     "start:prod": "node --env-file-if-exists=../../.env dist/main",
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "typecheck": "tsc --noEmit",
