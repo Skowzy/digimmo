@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_RULE_PARAMS, rectangularSite } from './defaults';
-import { validatePlan } from './validate';
+import { MAX_VIOLATIONS, validatePlan } from './validate';
 import type { Level, Plan } from './types';
 
 const site = rectangularSite(2000, 3000, 'north');
@@ -51,12 +51,27 @@ describe('validatePlan', () => {
     expect(sev).toEqual([...sev].sort((a, b) => (a === b ? 0 : a === 'error' ? -1 : 1)));
     expect(sev).toContain('error');
   });
-  it('gros plan (500 meubles empilés) → pas de débordement de pile', () => {
+  it('gros plan (500 meubles empilés) → pas de débordement de pile, liste plafonnée', () => {
     const room = { id: 'a', type: 'autre' as const, name: 'A', rect: { x: 500, y: 500, w: 600, h: 400 } };
     const furniture = Array.from({ length: 500 }, (_, i) => ({ id: `f${i}`, catalogId: 'x', label: `M${i}`, x: 510, y: 510, w: 50, d: 50, rotation: 0 as const }));
     const plan: Plan = { levels: [{ id: 'rdc', rooms: [room], openings: [], furniture }], stairs: null };
     const v = validatePlan(site, DEFAULT_RULE_PARAMS, plan);
-    expect(v.filter((x) => x.code === 'FURNITURE_OVERLAP')).toHaveLength((500 * 499) / 2);
+    expect(v).toHaveLength(MAX_VIOLATIONS + 1);
+    expect(v.slice(0, MAX_VIOLATIONS).every((x) => x.code === 'FURNITURE_OVERLAP')).toBe(true);
+    expect(v[MAX_VIOLATIONS]).toEqual({
+      code: 'TOO_MANY_VIOLATIONS', severity: 'warning', refs: [],
+      message: `… et ${(500 * 499) / 2 - MAX_VIOLATIONS} autres problèmes.`,
+    });
+  });
+  it('exactement MAX_VIOLATIONS problèmes → liste complète, sans résumé', () => {
+    // 20 meubles empilés = 190 chevauchements, + 10 meubles hors pièce = 200 problèmes.
+    const room = { id: 'a', type: 'autre' as const, name: 'A', rect: { x: 500, y: 500, w: 600, h: 400 } };
+    const stacked = Array.from({ length: 20 }, (_, i) => ({ id: `s${i}`, catalogId: 'x', label: `S${i}`, x: 510, y: 510, w: 50, d: 50, rotation: 0 as const }));
+    const outside = Array.from({ length: 10 }, (_, i) => ({ id: `o${i}`, catalogId: 'x', label: `O${i}`, x: 1200 + i * 60, y: 1200, w: 50, d: 50, rotation: 0 as const }));
+    const plan: Plan = { levels: [{ id: 'rdc', rooms: [room], openings: [], furniture: [...stacked, ...outside] }], stairs: null };
+    const v = validatePlan(site, DEFAULT_RULE_PARAMS, plan);
+    expect(v).toHaveLength(MAX_VIOLATIONS);
+    expect(v.some((x) => x.code === 'TOO_MANY_VIOLATIONS')).toBe(false);
   });
 
   it('erreurs avant alertes : FOOTPRINT_NEAR_MAX (émis en premier) passe après ROOM_OVERLAP', () => {
