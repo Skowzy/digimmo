@@ -20,7 +20,7 @@ export function DesignSystemPage() {
   const [modale, setModale] = useState(false)
   const [outil, setOutil] = useState('Pièce')
   return (
-    <main className={`${styles.page} grille`}>
+    <div className={`${styles.page} grille`}>
       <PageHeader title="Design system « Calque d'architecte »" subtitle="Tokens et composants de base de Digimmo." />
 
       <section className={styles.section} aria-labelledby="ds-couleurs">
@@ -120,6 +120,6 @@ export function DesignSystemPage() {
           Cette action est définitive.
         </Modal>
       </section>
-    </main>
+    </div>
   )
 }
