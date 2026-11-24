@@ -1,0 +1,11 @@
+.defilement { overflow-x: auto; margin-bottom: var(--esp-5); }
+.defilement:focus-visible { outline: 2px solid var(--encre); outline-offset: 2px; }
+.table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table caption { text-align: left; font-family: var(--font-cote); font-size: 12px; padding: var(--esp-2) 0; }
+.table th, .table td { text-align: left; padding: var(--esp-2) var(--esp-3); border-bottom: 1px solid var(--trait); white-space: nowrap; }
+.table th { font-size: 12px; color: var(--encre-2); font-weight: 600; }
+.mono { font-family: var(--font-cote); }
+.actions { display: flex; gap: var(--esp-2); }
+.form { display: flex; flex-direction: column; gap: var(--esp-4); }
+.select { display: flex; flex-direction: column; gap: var(--esp-1); font-size: 12px; }
+.select select { font-family: var(--font-ui); font-size: 13px; padding: 7px 9px; border: none; border-bottom: 1.5px solid var(--encre); background: var(--blanc); color: var(--encre); }

@@ -47,3 +47,35 @@ export function useDeleteProject() {
     },
   })
 }
+
+export type FurnitureCategory = 'chambre' | 'cuisine' | 'sdb' | 'sejour' | 'autre'
+export type FurnitureItem = { id: string; category: FurnitureCategory; name: string; widthCm: number; depthCm: number; symbol: string }
+export type FurnitureInput = Omit<FurnitureItem, 'id'>
+
+export const useCatalog = () =>
+  useQuery({ queryKey: ['catalog'], queryFn: () => api<FurnitureItem[]>('/catalog') })
+
+export function useCreateFurniture() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: FurnitureInput) => api<FurnitureItem>('/admin/catalog', { method: 'POST', body }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['catalog'] }),
+  })
+}
+
+export function useUpdateFurniture() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...body }: Partial<FurnitureInput> & { id: string }) =>
+      api<FurnitureItem>(`/admin/catalog/${id}`, { method: 'PATCH', body }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['catalog'] }),
+  })
+}
+
+export function useDeleteFurniture() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/admin/catalog/${id}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['catalog'] }),
+  })
+}
