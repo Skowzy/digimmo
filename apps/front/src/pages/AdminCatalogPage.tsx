@@ -21,9 +21,9 @@ const CATEGORIES: [FurnitureCategory, string][] = [
 const MIN_CM = 1
 const MAX_CM = 1000
 
-type Edition = { item: FurnitureItem | null }
+type Edition = { item: FurnitureItem | null; n: number }
 
-function FurnitureForm({ edition, onClose }: { edition: Edition; onClose: () => void }) {
+function FurnitureForm({ edition, open, onClose }: { edition: Edition; open: boolean; onClose: () => void }) {
   const { item } = edition
   const creation = useCreateFurniture()
   const miseAJour = useUpdateFurniture()
@@ -68,7 +68,7 @@ function FurnitureForm({ edition, onClose }: { edition: Edition; onClose: () => 
   const titre = item ? 'Modifier le meuble' : 'Ajouter un meuble'
   return (
     <Modal
-      open
+      open={open}
       title={titre}
       onClose={() => { if (!envoi.occupe()) onClose() }}
       footer={
@@ -81,9 +81,11 @@ function FurnitureForm({ edition, onClose }: { edition: Edition; onClose: () => 
       <form id="form-meuble" className={styles.form} noValidate onSubmit={valider} ref={formRef}>
         <div className={styles.select}>
           <label htmlFor="meuble-categorie">Catégorie</label>
-          <select id="meuble-categorie" value={category} onChange={(e) => setCategory(e.target.value as FurnitureCategory)}>
+          <select id="meuble-categorie" value={category} onChange={(e) => setCategory(e.target.value as FurnitureCategory)}
+            aria-invalid={err('category') ? true : undefined} aria-describedby={err('category') ? 'meuble-categorie-erreur' : undefined}>
             {CATEGORIES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
+          {err('category') && <small id="meuble-categorie-erreur" className={styles.error}>{err('category')}</small>}
         </div>
         <Field label="Nom" value={name} onChange={(e) => setName(e.target.value)} error={err('name')} />
         <Field label="Largeur (m)" inputMode="decimal" mono value={width} onChange={(e) => setWidth(e.target.value)} error={err('width')} />
@@ -99,7 +101,12 @@ export function AdminCatalogPage() {
   const { data: catalogue, isPending, error } = useCatalog()
   const suppression = useDeleteFurniture()
   const verrou = useEnvoiUnique()
-  const [edition, setEdition] = useState<Edition | null>(null)
+  const [edition, setEdition] = useState<Edition>({ item: null, n: 0 })
+  const [ouvert, setOuvert] = useState(false)
+  const ouvrir = (item: FurnitureItem | null) => {
+    setEdition((e) => ({ item, n: e.n + 1 }))
+    setOuvert(true)
+  }
   const [aSupprimer, setASupprimer] = useState<FurnitureItem | null>(null)
 
   const titre = useRef<HTMLHeadingElement>(null)
@@ -131,10 +138,11 @@ export function AdminCatalogPage() {
       <PageHeader
         title="Catalogue"
         titleRef={titre}
-        actions={<Button onClick={() => setEdition({ item: null })}>Ajouter un meuble</Button>}
+        actions={<Button onClick={() => ouvrir(null)}>Ajouter un meuble</Button>}
       />
       {error && <Alert>{error.message}</Alert>}
       {isPending && !error && <p>Chargement…</p>}
+      {catalogue?.length === 0 && <p>Aucun meuble dans le catalogue. Ajoutez-en un.</p>}
       {CATEGORIES.map(([cat, libelle]) => {
         const lignes = catalogue?.filter((i) => i.category === cat) ?? []
         if (lignes.length === 0) return null
@@ -160,7 +168,7 @@ export function AdminCatalogPage() {
                     <td>{i.symbol}</td>
                     <td>
                       <div className={styles.actions}>
-                        <Button variant="secondary" aria-label={`Modifier ${i.name}`} onClick={() => setEdition({ item: i })}>Modifier</Button>
+                        <Button variant="secondary" aria-label={`Modifier ${i.name}`} onClick={() => ouvrir(i)}>Modifier</Button>
                         <Button variant="danger" aria-label={`Supprimer ${i.name}`} onClick={() => setASupprimer(i)}>Supprimer</Button>
                       </div>
                     </td>
@@ -171,7 +179,7 @@ export function AdminCatalogPage() {
           </div>
         )
       })}
-      {edition && <FurnitureForm key={edition.item?.id ?? 'nouveau'} edition={edition} onClose={() => setEdition(null)} />}
+      <FurnitureForm key={edition.n} edition={edition} open={ouvert} onClose={() => setOuvert(false)} />
       <Modal
         open={aSupprimer !== null}
         title="Supprimer ce meuble ?"

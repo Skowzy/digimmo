@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { axe } from 'vitest-axe'
@@ -135,6 +135,88 @@ describe('administration du catalogue', () => {
     mockCatalog()
     const { container } = renderApp('/admin/catalogue')
     await screen.findByRole('table', { name: 'Chambre' })
+    expect((await axe(container)).violations).toEqual([])
+  })
+
+  it('focus restitué : Annuler puis enregistrement d\'une modification', async () => {
+    const state = mockCatalog()
+    server.use(http.patch('/api/admin/catalog/:id', async ({ request }) => {
+      state[0] = { ...state[0]!, ...((await request.json()) as object) }
+      return HttpResponse.json(state[0])
+    }))
+    renderApp('/admin/catalogue')
+    const ajouter = await screen.findByRole('button', { name: 'Ajouter un meuble' })
+    await userEvent.click(ajouter)
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Annuler' }))
+    await waitFor(() => expect(ajouter).toHaveFocus())
+    await userEvent.click(screen.getByRole('button', { name: 'Modifier Lit double' }))
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Enregistrer' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.getByRole('button', { name: 'Modifier Lit double' })).toHaveFocus()
+  })
+
+  it('catalogue vide : message et bouton d\'ajout', async () => {
+    server.use(
+      http.get('/api/auth/me', () => HttpResponse.json(admin)),
+      http.get('/api/catalog', () => HttpResponse.json([])),
+    )
+    renderApp('/admin/catalogue')
+    expect(await screen.findByText('Aucun meuble dans le catalogue. Ajoutez-en un.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ajouter un meuble' })).toBeInTheDocument()
+  })
+
+  it('double clic : une seule requête DELETE', async () => {
+    mockCatalog()
+    let n = 0
+    server.use(http.delete('/api/admin/catalog/:id', async () => {
+      n++
+      await new Promise((r) => setTimeout(r, 50))
+      return new HttpResponse(null, { status: 204 })
+    }))
+    renderApp('/admin/catalogue')
+    await userEvent.click(await screen.findByRole('button', { name: 'Supprimer Armoire' }))
+    const bouton = within(await screen.findByRole('dialog')).getByRole('button', { name: 'Supprimer' })
+    act(() => { fireEvent.click(bouton); fireEvent.click(bouton) })
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(n).toBe(1)
+  })
+
+  it('double clic : une seule requête POST', async () => {
+    mockCatalog()
+    let n = 0
+    server.use(http.post('/api/admin/catalog', async () => {
+      n++
+      await new Promise((r) => setTimeout(r, 50))
+      return HttpResponse.json({ id: 'f9', category: 'chambre', name: 'X', widthCm: 100, depthCm: 100, symbol: 's' }, { status: 201 })
+    }))
+    renderApp('/admin/catalogue')
+    await userEvent.click(await screen.findByRole('button', { name: 'Ajouter un meuble' }))
+    const dialog = await screen.findByRole('dialog')
+    await userEvent.type(within(dialog).getByLabelText('Nom'), 'X')
+    await userEvent.type(within(dialog).getByLabelText('Largeur (m)'), '1')
+    await userEvent.type(within(dialog).getByLabelText('Profondeur (m)'), '1')
+    await userEvent.type(within(dialog).getByLabelText('Pictogramme'), 's')
+    const bouton = within(dialog).getByRole('button', { name: 'Enregistrer' })
+    act(() => { fireEvent.click(bouton); fireEvent.click(bouton) })
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(n).toBe(1)
+  })
+
+  it('erreur serveur sur la catégorie liée au select ; axe avec modale ouverte', async () => {
+    mockCatalog()
+    server.use(http.post('/api/admin/catalog', () =>
+      HttpResponse.json({ message: 'Données invalides.', issues: ['category: Catégorie invalide'] }, { status: 400 })))
+    const { container } = renderApp('/admin/catalogue')
+    await userEvent.click(await screen.findByRole('button', { name: 'Ajouter un meuble' }))
+    const dialog = await screen.findByRole('dialog')
+    await userEvent.type(within(dialog).getByLabelText('Nom'), 'X')
+    await userEvent.type(within(dialog).getByLabelText('Largeur (m)'), '1')
+    await userEvent.type(within(dialog).getByLabelText('Profondeur (m)'), '1')
+    await userEvent.type(within(dialog).getByLabelText('Pictogramme'), 's')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Enregistrer' }))
+    const select = await within(dialog).findByLabelText('Catégorie')
+    await waitFor(() => expect(select).toHaveAttribute('aria-invalid', 'true'))
+    expect(select).toHaveAccessibleDescription('Catégorie invalide')
     expect((await axe(container)).violations).toEqual([])
   })
 })
