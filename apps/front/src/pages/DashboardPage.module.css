@@ -2,4 +2,3 @@
 @media (max-width: 639px) { .grille { grid-template-columns: 1fr; } }
 .squelette { height: 220px; background: var(--papier-2); border: 1px solid var(--trait); border-radius: var(--rayon); }
 .vide { display: flex; flex-direction: column; align-items: flex-start; gap: var(--esp-3); }
-.pied { display: flex; gap: var(--esp-2); }
