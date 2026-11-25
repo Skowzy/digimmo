@@ -195,6 +195,7 @@ export function PlanCanvas({ site, rules, violations }: Props) {
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={(e) => { if (!finPan(e)) gesture.handlers.onPointerUp(e) }}
+        onPointerLeave={gesture.handlers.onPointerLeave}
         onPointerCancel={(e) => { if (!finPan(e)) gesture.handlers.onPointerCancel(e) }}
         onLostPointerCapture={gesture.handlers.onLostPointerCapture}
       >

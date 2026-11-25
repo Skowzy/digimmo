@@ -44,6 +44,7 @@ export function OpeningShape({ opening, enErreur = false, selectionnee = false, 
       <line className={styles.trou} x1={a.x} y1={a.y} x2={b.x} y2={b.y} strokeWidth={EPAISSEUR_TROU} />
       {corps}
       <line className={styles.zoneTouche} x1={a.x} y1={a.y} x2={b.x} y2={b.y} />
+      {enErreur && <rect data-hachure className={styles.hachure} x={contour.x} y={contour.y} width={contour.w} height={contour.h} />}
       {selectionnee && <rect data-contour className={styles.contour} x={contour.x} y={contour.y} width={contour.w} height={contour.h} />}
     </g>
   )

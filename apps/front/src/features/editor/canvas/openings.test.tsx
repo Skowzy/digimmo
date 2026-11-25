@@ -90,6 +90,13 @@ describe('outil Porte / Fenêtre', () => {
     fireEvent.pointerMove(svg(), { ...pt(600, 700), buttons: 0 })
     expect(document.querySelector('[data-segment-survol]')).toBeNull()
   })
+  it('survol : effacé quand le pointeur quitte le plan', () => {
+    monter(planDe([sejour]), 'door')
+    fireEvent.pointerMove(svg(), { ...pt(600, 500), buttons: 0 })
+    expect(document.querySelector('[data-segment-survol]')).not.toBeNull()
+    fireEvent.pointerLeave(svg())
+    expect(document.querySelector('[data-segment-survol]')).toBeNull()
+  })
 })
 
 describe('déplacement et propriétés d\'une ouverture', () => {

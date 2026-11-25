@@ -24,4 +24,8 @@ describe('OpeningShape', () => {
     expect(c.querySelector('[data-opening="o1"]')!.getAttribute('class')).toMatch(/enErreur/)
     expect(c.querySelector('[data-contour]')).not.toBeNull()
   })
+  it('en erreur : hachure non colorée seulement en erreur', () => {
+    expect(dansSvg(porte).querySelector('[data-hachure]')).toBeNull()
+    expect(dansSvg(porte, { enErreur: true }).querySelector('[data-hachure]')).not.toBeNull()
+  })
 })

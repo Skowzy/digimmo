@@ -277,6 +277,7 @@ export function useGesture() {
       onPointerDown,
       onPointerMove,
       onPointerUp,
+      onPointerLeave: () => setSurvol(null),
       onPointerCancel: (e: React.PointerEvent<SVGSVGElement>) => {
         if (geste.current?.id === e.pointerId) annuler()
       },
