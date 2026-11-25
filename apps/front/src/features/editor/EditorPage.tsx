@@ -6,6 +6,7 @@ import { ApiError } from '../../lib/api'
 import { usePlan, useProject } from '../../lib/queries'
 import { Alert, Button, ButtonLink, PageHeader } from '../../ui'
 import styles from './EditorPage.module.css'
+import { LevelTabs } from './panels/LevelTabs'
 import { PropertiesPanel } from './panels/PropertiesPanel'
 import { RulesPanel } from './panels/RulesPanel'
 import { Toolbar } from './panels/Toolbar'
@@ -65,8 +66,11 @@ function Editeur({ id, nom, site, rules }: { id: string; nom: string; site: Site
       <p className={styles.etroit}>L'éditeur est prévu pour un écran d'ordinateur.</p>
       <div className={styles.zones}>
         <Toolbar />
-        <div className={styles.canvas}>
-          <PlanCanvas site={site} rules={rules} violations={violations} />
+        <div className={styles.centre}>
+          <LevelTabs />
+          <div className={styles.canvas}>
+            <PlanCanvas site={site} rules={rules} violations={violations} />
+          </div>
         </div>
         <aside className={styles.panneaux} aria-label="Panneaux">
           <PropertiesPanel />

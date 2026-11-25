@@ -7,6 +7,7 @@ import type { View } from '../state/types'
 import { useEditor } from '../state/useEditor'
 import styles from './PlanCanvas.module.css'
 import { RoomShape } from './RoomShape'
+import { StairsShape } from './StairsShape'
 import { SelectionHandles } from './SelectionHandles'
 import { LIMITE_PIECES, useGesture } from './useGesture'
 
@@ -179,7 +180,7 @@ export function PlanCanvas({ site, rules, violations }: Props) {
   const sel = state.selection
   const selRect = sel?.kind === 'room' ? level.rooms.find((r) => r.id === sel.id)?.rect
     : sel?.kind === 'stairs' ? state.plan.stairs?.rect : undefined
-  const classeSvg = [styles.svg, state.tool === 'room' && styles.curseurPiece, espace && styles.pan, panne && styles.panActif].filter(Boolean).join(' ')
+  const classeSvg = [styles.svg, (state.tool === 'room' || state.tool === 'stairs') && styles.curseurPiece, espace && styles.pan, panne && styles.panActif].filter(Boolean).join(' ')
 
   return (
     <div className={styles.zone}>
@@ -223,13 +224,14 @@ export function PlanCanvas({ site, rules, violations }: Props) {
         ))}
         {autre?.rooms.map((r) => <RoomShape key={r.id} room={r} fantome />)}
         {level.rooms.map((r) => <RoomShape key={r.id} room={r} enErreur={enErreur.has(r.id)} />)}
+        {state.plan.stairs && <StairsShape rect={state.plan.stairs.rect} />}
         {selRect && !gesture.apercu && (
           <rect className={styles.selection} x={selRect.x} y={selRect.y} width={selRect.w} height={selRect.h} />
         )}
         {gesture.apercu && (
           <rect className={styles.apercu} x={gesture.apercu.x} y={gesture.apercu.y} width={gesture.apercu.w} height={gesture.apercu.h} />
         )}
-        {sel?.kind === 'room' && state.tool === 'select' && selRect && (
+        {(sel?.kind === 'room' || sel?.kind === 'stairs') && state.tool === 'select' && selRect && (
           <SelectionHandles rect={gesture.apercu ? gesture.apercu : selRect} cmParPx={view.width / (pxW || 1000)} />
         )}
       </svg>

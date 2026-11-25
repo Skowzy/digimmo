@@ -1,0 +1,5 @@
+.niveaux { display: flex; align-items: center; gap: var(--esp-3); margin-bottom: var(--esp-2); }
+.onglets { display: flex; gap: var(--esp-1); }
+.onglet { font: inherit; padding: var(--esp-1) var(--esp-3); background: var(--papier-2); color: var(--encre); border: 1px solid var(--trait); border-radius: var(--rayon); cursor: pointer; }
+.actif { background: var(--encre); color: var(--papier); }
+.onglet:focus-visible { outline: 2px solid var(--encre); outline-offset: 2px; }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { formatArea, formatMeters, type Room, type RoomType } from '@digimmo/domain'
+import { formatArea, formatMeters, type Rect, type Room, type RoomType } from '@digimmo/domain'
 import { parseMeters, parseMetersOrZero } from '../../../lib/units'
 import { Button, Field, Select } from '../../../ui'
 import { currentLevel } from '../state/reducer'
@@ -90,11 +90,13 @@ export function PropertiesPanel() {
   } else if (sel?.kind === 'furniture') {
     const f = level.furniture.find((x) => x.id === sel.id)
     if (f) titre = `Meuble : ${f.label}`
-  } else if (sel?.kind === 'stairs' && state.plan.stairs) titre = 'Escalier'
+  }
+  const escalier = sel?.kind === 'stairs' ? state.plan.stairs : null
   return (
     <section aria-labelledby="ed-proprietes" className={styles.panneau}>
       <h2 id="ed-proprietes">Propriétés</h2>
       {room ? <PanneauPiece key={room.id} room={room} />
+        : escalier ? <PanneauEscalier rect={escalier.rect} />
         : titre ? <PanneauElement titre={titre} />
           : <p>Sélectionnez un élément du plan.</p>}
     </section>
@@ -106,13 +108,28 @@ function supprimerEtFocaliser(dispatch: ReturnType<typeof useEditor>['dispatch']
   document.querySelector<SVGSVGElement>('svg[aria-label="Plan du projet"]')?.focus()
 }
 
-/** Ouverture, meuble ou escalier : seule la suppression pour l'instant (les tâches 7 à 9 ajoutent leurs champs). */
+/** Ouverture ou meuble : seule la suppression pour l'instant (les tâches 7 à 9 ajoutent leurs champs). */
 function PanneauElement({ titre }: { titre: string }) {
   const { dispatch } = useEditor()
   return (
     <div className={styles.champs}>
       <h3 className={styles.titreElement}>{titre}</h3>
       <Button variant="danger" size="sm" onClick={() => supprimerEtFocaliser(dispatch)}>Supprimer</Button>
+    </div>
+  )
+}
+
+function PanneauEscalier({ rect: r }: { rect: Rect }) {
+  const { dispatch } = useEditor()
+  const rect = (changes: Partial<Rect>) => dispatch({ type: 'setStairs', rect: { ...r, ...changes } })
+  return (
+    <div className={styles.champs}>
+      <h3 className={styles.titreElement}>Escalier</h3>
+      <Champ label="X (m)" mono committed={metres(r.x)} parse={analyseMetres(0, true)} onCommit={(v) => rect({ x: Number(v) })} />
+      <Champ label="Y (m)" mono committed={metres(r.y)} parse={analyseMetres(0, true)} onCommit={(v) => rect({ y: Number(v) })} />
+      <Champ label="Largeur (m)" mono committed={metres(r.w)} parse={analyseMetres(50, false)} onCommit={(v) => rect({ w: Number(v) })} />
+      <Champ label="Longueur (m)" mono committed={metres(r.h)} parse={analyseMetres(50, false)} onCommit={(v) => rect({ h: Number(v) })} />
+      <Button variant="danger" size="sm" onClick={() => supprimerEtFocaliser(dispatch)}>Supprimer l'escalier</Button>
     </div>
   )
 }

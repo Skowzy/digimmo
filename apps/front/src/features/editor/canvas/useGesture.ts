@@ -10,6 +10,7 @@ export const MAX_ROOMS = 100
 export const LIMITE_PIECES = 'Limite de 100 pièces par niveau atteinte.'
 const SEUIL_CLIC_PX = 4
 const TAILLE_CLIC_CM = 300
+const ESCALIER_CLIC_CM = { w: 100, h: 300 } // largeur × longueur
 const MIN_CM = 50
 const MAX_CM = 100_000 // borne du schéma du domaine (coordonnées 0..100000)
 
@@ -17,10 +18,12 @@ const borne = (v: number, max = MAX_CM) => Math.min(Math.max(v, 0), max)
 /** Garde le rectangle dans [0, MAX] en conservant sa taille. */
 const dansRepere = (r: Rect): Rect => ({ ...r, x: borne(r.x, MAX_CM - r.w), y: borne(r.y, MAX_CM - r.h) })
 
+/** Élément déplaçable ou redimensionnable : une pièce ou l'escalier. */
+type Cible = { kind: 'room' | 'stairs'; id: string; rect: Rect }
 type Geste =
-  | { kind: 'draw'; id: number; client: Point; start: Point }
-  | { kind: 'move'; id: number; client: Point; start: Point; room: Room; moved: boolean }
-  | { kind: 'resize'; id: number; client: Point; room: Room; edge: ResizeEdge; moved: boolean }
+  | { kind: 'draw'; id: number; client: Point; start: Point; pour: 'room' | 'stairs' }
+  | { kind: 'move'; id: number; client: Point; start: Point; cible: Cible; moved: boolean }
+  | { kind: 'resize'; id: number; client: Point; cible: Cible; edge: ResizeEdge; moved: boolean }
 
 const chevauche = (a0: number, a1: number, b0: number, b1: number, t: number) => a0 <= b1 + t && b0 <= a1 + t
 
@@ -48,6 +51,7 @@ export function useGesture() {
   const [limite, setLimite] = useState(false)
   const [actif, setActif] = useState(false)
   const niveau = currentLevel(state)
+  const aEtage = state.plan.levels.some((l) => l.id === 'r1')
 
   // Changer d'outil efface le message (ajustement d'état pendant le rendu).
   const [outilVu, setOutilVu] = useState(state.tool)
@@ -77,7 +81,7 @@ export function useGesture() {
   }, [actif, annuler])
 
   const seuil = (svg: SVGSVGElement) => screenThreshold(state.view, svg.getBoundingClientRect().width)
-  const autres = (exclu?: string) => niveau.rooms.filter((r) => r.id !== exclu).map((r) => r.rect)
+  const autres = (exclu?: Cible) => niveau.rooms.filter((r) => exclu?.kind !== 'room' || r.id !== exclu.id).map((r) => r.rect)
 
   const calculer = (g: Geste, svg: SVGSVGElement, e: { clientX: number; clientY: number }): Rect | null => {
     const t = seuil(svg)
@@ -91,13 +95,13 @@ export function useGesture() {
       return dansRepere(normaliser(ancrer(g.start), ancrer(p)))
     }
     if (g.kind === 'move') {
-      const r0 = g.room.rect
+      const r0 = g.cible.rect
       const brut = { ...r0, x: r0.x + p.x - g.start.x, y: r0.y + p.y - g.start.y }
-      const c = candidats(autres(g.room.id), brut, t)
+      const c = candidats(autres(g.cible), brut, t)
       return dansRepere({ ...brut, x: snapRect(brut, c.pourX, t).x, y: snapRect(brut, c.pourY, t).y })
     }
-    const r0 = g.room.rect
-    const c = candidats(autres(g.room.id), r0, t)
+    const r0 = g.cible.rect
+    const c = candidats(autres(g.cible), r0, t)
     const pb = { x: borne(p.x), y: borne(p.y) }
     const rx = snapResize(r0, g.edge, pb, c.pourX, t, MIN_CM)
     const ry = snapResize(r0, g.edge, pb, c.pourY, t, MIN_CM)
@@ -108,7 +112,13 @@ export function useGesture() {
     return dansRepere({ x: gauche, y: haut, w: droite - gauche, h: bas - haut })
   }
 
-  const creer = (rect: Rect) => {
+  const creer = (rect: Rect, pour: 'room' | 'stairs') => {
+    if (pour === 'stairs') {
+      dispatch({ type: 'setStairs', rect })
+      dispatch({ type: 'select', selection: { kind: 'stairs', id: 'stairs' } })
+      dispatch({ type: 'setTool', tool: 'select' })
+      return
+    }
     if (niveau.rooms.length >= MAX_ROOMS) { setLimite(true); return }
     const ids = new Set(state.plan.levels.flatMap((l) => l.rooms.map((r) => r.id)))
     const room: Room = { id: newId('r', ids), type: 'autre', name: nextRoomName(niveau.rooms), rect }
@@ -131,27 +141,35 @@ export function useGesture() {
     const p = svgPoint(svg, e.clientX, e.clientY)
     const client = { x: e.clientX, y: e.clientY }
     const capturer = () => svg.setPointerCapture?.(e.pointerId)
-    if (state.tool === 'room') {
+    if (state.tool === 'room' || (state.tool === 'stairs' && aEtage)) {
       capturer()
-      demarrer({ kind: 'draw', id: e.pointerId, client, start: p })
+      demarrer({ kind: 'draw', id: e.pointerId, client, start: p, pour: state.tool })
       return
     }
     if (state.tool !== 'select') return
     const poignee = cible?.closest('[data-handle]')?.getAttribute('data-handle')
     const sel = state.selection
+    const escalier = state.plan.stairs
     const selRoom = sel?.kind === 'room' ? niveau.rooms.find((r) => r.id === sel.id) : undefined
-    if (poignee && selRoom) {
+    const selCible: Cible | undefined = selRoom ? { kind: 'room', id: selRoom.id, rect: selRoom.rect }
+      : sel?.kind === 'stairs' && escalier ? { kind: 'stairs', id: 'stairs', rect: escalier.rect } : undefined
+    if (poignee && selCible) {
       capturer()
-      demarrer({ kind: 'resize', id: e.pointerId, client, room: selRoom, edge: poignee as ResizeEdge, moved: false })
+      demarrer({ kind: 'resize', id: e.pointerId, client, cible: selCible, edge: poignee as ResizeEdge, moved: false })
       return
     }
-    const id = cible?.closest('[data-room]')?.getAttribute('data-room')
-    const room = id ? niveau.rooms.find((r) => r.id === id) : undefined
     setLimite(false)
-    if (!room) { dispatch({ type: 'select', selection: null }); return }
-    dispatch({ type: 'select', selection: { kind: 'room', id: room.id } })
+    let touchee: Cible | undefined
+    if (escalier && cible?.closest('[data-stairs]')) touchee = { kind: 'stairs', id: 'stairs', rect: escalier.rect }
+    else {
+      const id = cible?.closest('[data-room]')?.getAttribute('data-room')
+      const room = id ? niveau.rooms.find((r) => r.id === id) : undefined
+      if (room) touchee = { kind: 'room', id: room.id, rect: room.rect }
+    }
+    if (!touchee) { dispatch({ type: 'select', selection: null }); return }
+    dispatch({ type: 'select', selection: { kind: touchee.kind, id: touchee.id } })
     capturer()
-    demarrer({ kind: 'move', id: e.pointerId, client, start: p, room, moved: false })
+    demarrer({ kind: 'move', id: e.pointerId, client, start: p, cible: touchee, moved: false })
   }
 
   const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
@@ -177,19 +195,21 @@ export function useGesture() {
     const svg = e.currentTarget
     if (g.kind === 'draw') {
       const dist = Math.hypot(e.clientX - g.client.x, e.clientY - g.client.y)
-      if (dist >= SEUIL_CLIC_PX) { creer(calculer(g, svg, e)!); return }
+      if (dist >= SEUIL_CLIC_PX) { creer(calculer(g, svg, e)!, g.pour); return }
       const t = seuil(svg)
-      const centre = { x: g.start.x - TAILLE_CLIC_CM / 2, y: g.start.y - TAILLE_CLIC_CM / 2, w: TAILLE_CLIC_CM, h: TAILLE_CLIC_CM }
+      const { w, h } = g.pour === 'stairs' ? ESCALIER_CLIC_CM : { w: TAILLE_CLIC_CM, h: TAILLE_CLIC_CM }
+      const centre = { x: g.start.x - w / 2, y: g.start.y - h / 2, w, h }
       const c = candidats(autres(), centre, t)
-      creer(dansRepere({ ...centre, x: snapRect(centre, c.pourX, t).x, y: snapRect(centre, c.pourY, t).y }))
+      creer(dansRepere({ ...centre, x: snapRect(centre, c.pourX, t).x, y: snapRect(centre, c.pourY, t).y }), g.pour)
       return
     }
     if (!g.moved) return
     const rect = calculer(g, svg, e)!
-    const r0 = g.room.rect
+    const r0 = g.cible.rect
     if (rect.x === r0.x && rect.y === r0.y && rect.w === r0.w && rect.h === r0.h) return
     setLimite(false)
-    dispatch({ type: 'updateRoom', id: g.room.id, changes: { rect } })
+    if (g.cible.kind === 'stairs') dispatch({ type: 'setStairs', rect })
+    else dispatch({ type: 'updateRoom', id: g.cible.id, changes: { rect } })
   }
 
   return {
