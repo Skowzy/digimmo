@@ -15,7 +15,8 @@ describe('responsive (lecture des feuilles de style)', () => {
   it('aucune width / min-width fixe en px supérieure à 360', () => {
     const fautifs: string[] = []
     for (const [fichier, brut] of Object.entries(feuilles)) {
-      const css = brut.replace(/\/\*[\s\S]*?\*\//g, '')
+      // Les conditions des at-rules (`@media (min-width: 900px) {`) ne sont pas des déclarations.
+      const css = brut.replace(/\/\*[\s\S]*?\*\//g, '').replace(/@(media|container|supports)[^{;]*/g, '')
       for (const m of css.matchAll(/(?<![\w-])(min-width|width)\s*:\s*(\d+(?:\.\d+)?)px/g)) {
         if (Number(m[2]) > 360) fautifs.push(`${fichier} : ${m[0]}`)
       }

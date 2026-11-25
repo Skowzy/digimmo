@@ -29,6 +29,7 @@ describe('page de l\'éditeur', () => {
     renderApp('/projets/p1')
     expect(await screen.findByRole('heading', { name: 'Alpha' })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Plan du projet' })).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
     expect(screen.getByText("L'éditeur est prévu pour un écran d'ordinateur.")).toBeInTheDocument()
   })
 
@@ -36,6 +37,7 @@ describe('page de l\'éditeur', () => {
     mock()
     renderApp('/projets/p1')
     expect(await screen.findByText('Chargement du plan…')).toHaveAttribute('role', 'status')
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
   })
 
   it('le lien « Paramètres du projet » mène au formulaire', async () => {
@@ -57,6 +59,7 @@ describe('page de l\'éditeur', () => {
     renderApp('/projets/zzz')
     expect(await screen.findByText('Projet introuvable.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Retour au tableau de bord' })).toHaveAttribute('href', '/projets')
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
   })
 
   it('axe', async () => {

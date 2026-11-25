@@ -3,7 +3,7 @@
 .titre { font-family: var(--font-titre); font-size: 22px; margin: 0; flex: 1; }
 .sauvegarde { min-width: 120px; text-align: right; font-family: var(--font-cote); color: var(--encre-2); }
 .etroit { margin: 0; padding: var(--esp-2) var(--esp-3); border: 1.5px dashed var(--trait); background: var(--papier-2); }
-@media (width >= 900px) { .etroit { display: none; } }
+@media (min-width: 900px) { .etroit { display: none; } }
 .zones { display: grid; grid-template-columns: auto 1fr 280px; gap: var(--esp-3); min-height: 520px; }
 .outils { display: flex; flex-direction: column; gap: var(--esp-2); min-width: var(--esp-6); }
 .canvas { background: var(--blanc); border: 1px solid var(--trait); border-radius: var(--rayon); overflow: hidden; }

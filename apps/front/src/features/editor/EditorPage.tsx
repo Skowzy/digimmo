@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router'
 import { useTitrePage } from '../../app/useTitrePage'
 import { ApiError } from '../../lib/api'
 import { usePlan, useProject } from '../../lib/queries'
-import { Alert, ButtonLink } from '../../ui'
+import { Alert, ButtonLink, PageHeader } from '../../ui'
 import styles from './EditorPage.module.css'
 
 export function EditorPage() {
@@ -15,13 +15,14 @@ export function EditorPage() {
     const introuvable = projet.error instanceof ApiError && projet.error.status === 404
     return (
       <div>
+        <PageHeader title="Projet" />
         <Alert>{introuvable ? 'Projet introuvable.' : projet.error.message}</Alert>
         <ButtonLink to="/projets">Retour au tableau de bord</ButtonLink>
       </div>
     )
   }
   if (!projet.data || (!plan.data && !plan.isError)) {
-    return <p role="status">Chargement du plan…</p>
+    return <div><PageHeader title="Projet" /><p role="status">Chargement du plan…</p></div>
   }
 
   return (
