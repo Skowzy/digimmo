@@ -46,3 +46,21 @@ afterEach(() => {
   server.resetHandlers()
 })
 afterAll(() => server.close())
+
+// jsdom n'implémente pas la géométrie SVG : matrice identité, donc les coordonnées client
+// valent directement des cm du plan dans les tests d'interaction.
+type Matrice = { a: number; b: number; c: number; d: number; e: number; f: number; inverse(): Matrice }
+function nouveauPoint(x = 0, y = 0): DOMPoint {
+  return {
+    x,
+    y,
+    matrixTransform(m: Matrice) {
+      return nouveauPoint(m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f)
+    },
+  } as unknown as DOMPoint
+}
+SVGSVGElement.prototype.createSVGPoint = () => nouveauPoint()
+SVGSVGElement.prototype.getScreenCTM = function getScreenCTM() {
+  const m: Matrice = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0, inverse() { return this } }
+  return m as unknown as DOMMatrix
+}
