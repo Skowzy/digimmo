@@ -23,7 +23,7 @@ export function SaveStatus({ status, saveNow, lastError }: Props) {
       <div role="status">
         {TEXTES[status]}
         {status === 'error' && lastError && (
-          <ul>{detail(lastError).map((m) => <li key={m}>{m}</li>)}</ul>
+          <ul>{detail(lastError).map((m, i) => <li key={i}>{m}</li>)}</ul>
         )}
       </div>
       {status === 'error' && <Button size="sm" variant="secondary" onClick={() => void saveNow()}>Réessayer</Button>}

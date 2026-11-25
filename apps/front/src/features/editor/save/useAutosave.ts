@@ -34,10 +34,12 @@ interface Options {
 export function useAutosave({ projectId, state, dispatch, delayMs = 3000 }: Options): Autosave {
   const queryClient = useQueryClient()
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<ApiError | null>(null)
+  // L'erreur est liée au plan envoyé : elle disparaît si l'on revient à un autre plan (undo vers l'enregistré).
+  const [error, setError] = useState<{ err: ApiError; planJson: string } | null>(null)
 
   const planRef = useRef(state.plan)
   const savedRef = useRef(json(state.savedPlan)) // dernier plan connu du serveur
+  const alive = useRef(true)
   const running = useRef<Promise<boolean> | null>(null) // l'unique requête en vol
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const retry = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -60,17 +62,19 @@ export function useAutosave({ projectId, state, dispatch, delayMs = 3000 }: Opti
           `/projects/${projectId}/plan`, { method: 'PUT', body: plan },
         )
         savedRef.current = json(plan)
+        if (!alive.current) return true // démonté : plus de cache, de dispatch ni de nouvel essai
         queryClient.setQueryData(['projects', projectId, 'plan'], { plan, validation: res.validation })
         dispatch({ type: 'markSaved', plan })
         return true
       } catch (e) {
         const err = e instanceof ApiError ? e : new ApiError('Erreur inattendue.', 0)
-        setError(err)
+        if (!alive.current) return false
+        setError({ err, planJson: json(plan) })
         if (retryable(err)) retry.current = setTimeout(() => retryFn.current(), RETRY_MS)
         return false
       } finally {
         running.current = null
-        setSaving(false)
+        if (alive.current) setSaving(false)
       }
     })()
     running.current = run
@@ -94,8 +98,12 @@ export function useAutosave({ projectId, state, dispatch, delayMs = 3000 }: Opti
     return () => clearTimeout(timer.current)
   }, [state.plan, state.savedPlan, dirty, delayMs, send])
 
-  useEffect(() => () => clearTimers(), [])
+  useEffect(() => {
+    alive.current = true
+    return () => { alive.current = false; clearTimers() }
+  }, [])
 
-  const status: SaveStatusKind = saving ? 'saving' : error ? 'error' : dirty ? 'dirty' : 'saved'
-  return { status, saveNow, lastError: error ?? undefined }
+  const erreur = dirty && error && error.planJson === json(state.plan) ? error.err : undefined
+  const status: SaveStatusKind = saving ? 'saving' : erreur ? 'error' : dirty ? 'dirty' : 'saved'
+  return { status, saveNow, lastError: erreur }
 }

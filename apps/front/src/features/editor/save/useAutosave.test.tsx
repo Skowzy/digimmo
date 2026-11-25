@@ -32,6 +32,14 @@ function serveur(initial: Plan, reponses: (n: number, plan: Plan) => Response | 
   )
   return s
 }
+const avecSalon: Plan = {
+  levels: [{ id: 'rdc', rooms: [{ id: 's1', type: 'sejour', name: 'Salon', rect: { x: 500, y: 500, w: 600, h: 400 } }], openings: [], furniture: [] }],
+  stairs: null,
+}
+const selectionnerSalon = async (container: HTMLElement) => {
+  const piece = container.querySelector('[data-room="s1"]') as Element
+  await userEvent.pointer([{ keys: '[MouseLeft>]', target: piece }, { keys: '[/MouseLeft]', target: piece }])
+}
 const avancer = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms) })
 const modifier = () => userEvent.click(screen.getByRole('button', { name: '+ Étage' }))
 const ouvrir = async () => {
@@ -58,18 +66,20 @@ describe('sauvegarde automatique', () => {
     expect(s.puts[0]!.levels.map((l) => l.id)).toEqual(['rdc', 'r1'])
   })
 
-  it('le délai repart à chaque modification : deux modifications à 1 s d\'écart, un seul PUT', async () => {
-    const s = serveur(vide)
-    await ouvrir()
-    await modifier()
+  it('le délai repart à chaque modification : deux vraies modifications à 1 s d\'écart, un seul PUT 3 s après la seconde', async () => {
+    const s = serveur(avecSalon)
+    const { container } = await ouvrir()
+    await selectionnerSalon(container)
+    await userEvent.selectOptions(screen.getByLabelText('Type'), 'chambre')
+    expect(screen.getByText('Modifications non enregistrées')).toBeInTheDocument()
     await avancer(1000)
-    await userEvent.click(screen.getByRole('button', { name: 'Rétablir' }).previousElementSibling as HTMLElement) // Annuler
-    await userEvent.click(screen.getByRole('button', { name: 'Rétablir' }))
+    await userEvent.selectOptions(screen.getByLabelText('Type'), 'cuisine')
     await avancer(2500)
     expect(s.puts).toHaveLength(0)
     await avancer(1000)
     await waitFor(() => expect(screen.getByText('Enregistré')).toBeInTheDocument())
     expect(s.puts).toHaveLength(1)
+    expect(s.puts[0]!.levels[0]!.rooms[0]!.type).toBe('cuisine')
   })
 
   it('modification pendant un envoi : second PUT avec la dernière version, jamais deux en vol', async () => {
@@ -210,7 +220,7 @@ describe('sauvegarde automatique', () => {
     }
     const attendu: Plan = { ...complet, levels: [complet.levels[0]!, { ...complet.levels[1]!, rooms: [] }] }
     const s = serveur(complet)
-    const { router, container } = await ouvrir()
+    const { router, container, queryClient } = await ouvrir()
     await userEvent.click(screen.getByRole('tab', { name: /étage|R\+1|Étage/i }))
     const piece = container.querySelector('[data-room="tmp"]') as Element
     await userEvent.pointer([{ keys: '[MouseLeft>]', target: piece }, { keys: '[/MouseLeft]', target: piece }])
@@ -222,12 +232,19 @@ describe('sauvegarde automatique', () => {
 
     await act(async () => { await router.navigate('/projets') })
     await screen.findByRole('heading', { name: /projets/i })
+    queryClient.removeQueries({ queryKey: ['projects', 'p1'] }) // le rechargement vient du serveur
     await act(async () => { await router.navigate('/projets/p1') })
     await screen.findByRole('img', { name: 'Plan du projet' })
     expect(s.stocke).toEqual(attendu)
     expect(screen.getByText('Enregistré')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeDisabled()
-    expect(container.querySelector('[data-room="s1"]')).not.toBeNull()
+    // Le plan de l'éditeur rechargé est relu via un envoi : une seule modification connue (type du salon).
+    await selectionnerSalon(container)
+    await userEvent.selectOptions(screen.getByLabelText('Type'), 'chambre')
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    await waitFor(() => expect(s.puts).toHaveLength(2))
+    const modifie: Plan = structuredClone(attendu)
+    modifie.levels[0]!.rooms[0]!.type = 'chambre'
+    expect(s.puts[1]).toEqual(modifie)
   })
 })
 
@@ -292,5 +309,37 @@ describe('quitter l\'éditeur', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
     await waitFor(() => expect(router.state.location.pathname).toBe('/connexion'))
     expect(screen.queryByRole('heading', { name: 'Des modifications ne sont pas enregistrées.' })).not.toBeInTheDocument()
+  })
+})
+
+describe('cycle de vie et erreurs', () => {
+  it('démontage pendant un envoi qui échoue : pas de nouvel essai fantôme, cache inchangé', async () => {
+    let liberer: () => void = () => {}
+    const s = serveur(vide, async () => {
+      await new Promise<void>((r) => { liberer = r })
+      return HttpResponse.json({ message: 'boum' }, { status: 500 })
+    })
+    const { router, queryClient } = await ouvrir()
+    await modifier()
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    await waitFor(() => expect(s.puts).toHaveLength(1))
+    await act(async () => { await router.navigate('/projets') })
+    await userEvent.click(await screen.findByRole('button', { name: 'Quitter sans enregistrer' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/projets'))
+    liberer()
+    await avancer(30000)
+    expect(s.puts).toHaveLength(1)
+    expect(queryClient.getQueryData<{ plan: Plan }>(['projects', 'p1', 'plan'])?.plan).toEqual(vide)
+  })
+
+  it('après un échec, revenir au plan enregistré (undo) efface l\'erreur', async () => {
+    serveur(vide, () => HttpResponse.json({ message: 'Format de plan invalide.', issues: ['x: y'] }, { status: 400 }))
+    await ouvrir()
+    await modifier()
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    await screen.findByText("Échec de l'enregistrement")
+    await userEvent.click(screen.getByRole('button', { name: 'Annuler' }))
+    await waitFor(() => expect(screen.getByText('Enregistré')).toBeInTheDocument())
+    expect(screen.queryByText("Échec de l'enregistrement")).not.toBeInTheDocument()
   })
 })
