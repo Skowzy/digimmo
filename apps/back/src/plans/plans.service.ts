@@ -8,6 +8,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
 import type { Project } from '../projects/project.entity';
+import { siteAndRules } from '../projects/site-and-rules';
 import { PlanDoc } from './plan.schema';
 
 export const EMPTY_PLAN: Plan = {
@@ -24,17 +25,7 @@ export type PlanResult =
   { ok: true; validation: PlanValidation } | { ok: false; issues: unknown };
 
 function check(project: Project, plan: Plan): PlanValidation {
-  // Pas d'import de projects.service (cycle de fichiers avec l'injection de PlansService).
-  const site = {
-    boundary: project.terrainPolygon,
-    streetEdge: project.streetEdge,
-  };
-  const rules = {
-    setbackStreetCm: project.setbackStreetCm,
-    setbackSidesCm: project.setbackSidesCm,
-    maxFootprintPct: project.maxFootprintPct,
-    minAreasM2: project.minAreasM2,
-  };
+  const { site, rules } = siteAndRules(project);
   return {
     violations: validatePlan(site, rules, plan),
     checkedAt: new Date().toISOString(),
@@ -63,10 +54,15 @@ export class PlansService {
     };
   }
 
-  /** Plan enregistré, ou null (contrairement à `get`, aucun plan vide de substitution). */
-  async findStored(projectId: string): Promise<Plan | null> {
-    const doc = await this.model.findOne({ projectId }).lean();
-    return doc ? { levels: doc.levels, stairs: doc.stairs } : null;
+  /** Plans enregistrés par projet, en une requête ; absent = pas de plan (aucun plan vide de substitution). */
+  async findStoredMany(projectIds: string[]): Promise<Map<string, Plan>> {
+    if (projectIds.length === 0) return new Map();
+    const docs = await this.model
+      .find({ projectId: { $in: projectIds } })
+      .lean();
+    return new Map(
+      docs.map((d) => [d.projectId, { levels: d.levels, stairs: d.stairs }]),
+    );
   }
 
   /** Stocke le plan PARSÉ (jamais le corps brut) ; un plan qui viole des règles reste un brouillon valide. */

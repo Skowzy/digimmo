@@ -15,6 +15,7 @@ import type { Repository } from 'typeorm';
 import { PlansService } from '../plans/plans.service';
 import type { User } from '../users/user.entity';
 import { Project } from './project.entity';
+import { siteAndRules } from './site-and-rules';
 import type { CreateProjectDto, UpdateProjectDto } from './projects.schemas';
 
 export interface ProjectDto {
@@ -30,13 +31,7 @@ export function toProjectDto(p: Project): ProjectDto {
   return {
     id: p.id,
     name: p.name,
-    site: { boundary: p.terrainPolygon, streetEdge: p.streetEdge },
-    rules: {
-      setbackStreetCm: p.setbackStreetCm,
-      setbackSidesCm: p.setbackSidesCm,
-      maxFootprintPct: p.maxFootprintPct,
-      minAreasM2: p.minAreasM2,
-    },
+    ...siteAndRules(p),
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
   };

@@ -28,15 +28,14 @@ export class AccountService {
   /** Champs choisis un à un : jamais d'entité étalée (hash, jetons). */
   async export(user: User): Promise<AccountExport> {
     const projects = await this.projects.list(user.id);
+    const plans = await this.plans.findStoredMany(projects.map((p) => p.id));
     return {
       exportedAt: new Date().toISOString(),
       user: { email: user.email, role: user.role, createdAt: user.createdAt },
-      projects: await Promise.all(
-        projects.map(async (p) => ({
-          ...toProjectDto(p),
-          plan: await this.plans.findStored(p.id),
-        })),
-      ),
+      projects: projects.map((p) => ({
+        ...toProjectDto(p),
+        plan: plans.get(p.id) ?? null,
+      })),
     };
   }
 
