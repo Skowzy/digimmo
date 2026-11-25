@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router'
 import { useTitrePage } from '../../app/useTitrePage'
 import { ApiError } from '../../lib/api'
 import { usePlan, useProject } from '../../lib/queries'
-import { Alert, ButtonLink, PageHeader } from '../../ui'
+import { Alert, Button, ButtonLink, PageHeader } from '../../ui'
 import styles from './EditorPage.module.css'
 import { EditorProvider } from './state/EditorContext'
 import { initEditor } from './state/reducer'
@@ -23,17 +23,23 @@ export function EditorPage() {
       </div>
     )
   }
-  if (!projet.data || (!plan.data && !plan.isError)) {
+  if (!plan.data && plan.isError) {
+    return (
+      <div>
+        <PageHeader title="Projet" />
+        <Alert>Impossible de charger le plan.</Alert>
+        <Button onClick={() => void plan.refetch()}>Réessayer</Button>
+      </div>
+    )
+  }
+  if (!projet.data || !plan.data) {
     return <div><PageHeader title="Projet" /><p role="status">Chargement du plan…</p></div>
   }
 
-  const initial = initEditor(
-    plan.data?.plan ?? { levels: [{ id: 'rdc', rooms: [], openings: [], furniture: [] }], stairs: null },
-    projet.data.site,
-  )
+  const initial = initEditor(plan.data.plan, projet.data.site)
 
   return (
-    <EditorProvider initial={initial}>
+    <EditorProvider key={id} initial={initial}>
     <div className={styles.page}>
       <header className={styles.entete}>
         <h1 className={styles.titre}>{projet.data.name}</h1>
@@ -41,7 +47,6 @@ export function EditorPage() {
         <div className={styles.sauvegarde} data-slot="sauvegarde" />
       </header>
       <p className={styles.etroit}>L'éditeur est prévu pour un écran d'ordinateur.</p>
-      {plan.isError && <Alert>{plan.error.message}</Alert>}
       <div className={styles.zones}>
         <div className={styles.outils} role="toolbar" aria-label="Outils" />
         <div className={styles.canvas}>

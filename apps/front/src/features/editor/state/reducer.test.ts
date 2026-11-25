@@ -18,7 +18,8 @@ const avecPiece = (): Plan => ({
   levels: [{ id: 'rdc', rooms: [room], openings: [], furniture: [meuble] }], stairs: null,
 })
 const init = (plan: Plan = vide()): EditorState => deepFreeze(initEditor(plan, rectangularSite(2000, 3000, 'south')))
-const run = (s: EditorState, ...actions: Action[]) => actions.reduce(editorReducer, s)
+const run = (s: EditorState, ...actions: Action[]) =>
+  actions.reduce((acc, a) => deepFreeze(editorReducer(acc, a)), s)
 
 describe('initEditor', () => {
   it('démarre au RDC avec la vue du terrain + 10 %', () => {
@@ -97,11 +98,39 @@ describe('niveaux et escalier', () => {
     expect(run(s, { type: 'addUpperLevel' })).toBe(s)
   })
   it('removeUpperLevel supprime r1 et l’escalier', () => {
-    const s = run(init(), { type: 'setStairs', rect: { x: 0, y: 0, w: 100, h: 200 } }, { type: 'addUpperLevel' },
+    const s = run(init(), { type: 'addUpperLevel' }, { type: 'setStairs', rect: { x: 0, y: 0, w: 100, h: 200 } },
       { type: 'removeUpperLevel' })
     expect(s.plan.levels).toHaveLength(1)
     expect(s.plan.stairs).toBeNull()
     expect(s.levelId).toBe('rdc')
+  })
+})
+
+describe('corrections de revue', () => {
+  it('addUpperLevel, undo, addRoom : la pièce va sur rdc', () => {
+    const s = run(init(), { type: 'addUpperLevel' }, { type: 'undo' }, { type: 'addRoom', room })
+    expect(s.levelId).toBe('rdc')
+    expect(s.plan.levels[0]!.rooms).toEqual([room])
+  })
+  it('redo ramène aussi un levelId valide', () => {
+    const s = run(init(), { type: 'addUpperLevel' }, { type: 'undo' }, { type: 'redo' })
+    expect(s.plan.levels).toHaveLength(2)
+  })
+  it('setStairs sans r1 est sans effet', () => {
+    const s0 = init()
+    expect(run(s0, { type: 'setStairs', rect: { x: 0, y: 0, w: 100, h: 200 } })).toBe(s0)
+  })
+  it('redimensionner par le bord gauche ne déplace pas les meubles', () => {
+    const s = run(init(avecPiece()), {
+      type: 'updateRoom', id: 'r1', changes: { rect: { x: 100, y: 0, w: 300, h: 300 } },
+    })
+    expect(currentLevel(s).furniture[0]).toMatchObject({ x: 50, y: 50 })
+  })
+  it('rotateFurniture tourne autour du centre et reste dans la pièce', () => {
+    const lit: Furniture = { id: 'f1', catalogId: 'lit', label: 'Lit', x: 300, y: 50, w: 100, d: 60, rotation: 0 }
+    const plan: Plan = { levels: [{ id: 'rdc', rooms: [room], openings: [], furniture: [lit] }], stairs: null }
+    const s = run(init(plan), { type: 'rotateFurniture', id: 'f1' })
+    expect(currentLevel(s).furniture[0]).toMatchObject({ rotation: 90, x: 320, y: 30 })
   })
 })
 

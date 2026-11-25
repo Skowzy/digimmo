@@ -62,6 +62,23 @@ describe('page de l\'éditeur', () => {
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
   })
 
+  it('plan en erreur : message, Réessayer, pas d\'éditeur ; le serveur revenu, le plan s\'affiche', async () => {
+    let ok = false
+    server.use(
+      http.get('/api/auth/me', () => HttpResponse.json(me)),
+      http.get('/api/projects/:id', () => HttpResponse.json(projet)),
+      http.get('/api/projects/:id/plan', () => ok
+        ? HttpResponse.json({ plan, validation: { violations: [], checkedAt: 'x' } })
+        : HttpResponse.json({ message: 'boum' }, { status: 500 })),
+    )
+    renderApp('/projets/p1')
+    expect(await screen.findByText('Impossible de charger le plan.', {}, { timeout: 5000 })).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: 'Plan du projet' })).not.toBeInTheDocument()
+    ok = true
+    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+    expect(await screen.findByRole('img', { name: 'Plan du projet' })).toBeInTheDocument()
+  })
+
   it('axe', async () => {
     mock()
     const { container } = renderApp('/projets/p1')

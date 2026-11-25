@@ -1,5 +1,5 @@
 import type { Furniture, Level, Opening, Plan, Rect, Room, Site } from '@digimmo/domain'
-import { furnitureFootprint } from '@digimmo/domain'
+import { containsRect, furnitureFootprint } from '@digimmo/domain'
 import type { EditorState, Selection, Tool, View } from './types'
 
 export const HISTORY_MAX = 100
@@ -10,11 +10,11 @@ export type Action =
   | { type: 'setLevel'; levelId: EditorState['levelId'] }
   | { type: 'setView'; view: View }
   | { type: 'addRoom'; room: Room }
-  | { type: 'updateRoom'; id: string; changes: Partial<Room> }
+  | { type: 'updateRoom'; id: string; changes: Partial<Omit<Room, 'id'>> }
   | { type: 'addOpening'; opening: Opening }
-  | { type: 'updateOpening'; id: string; changes: Partial<Opening> }
+  | { type: 'updateOpening'; id: string; changes: Partial<Omit<Opening, 'id'>> }
   | { type: 'addFurniture'; furniture: Furniture }
-  | { type: 'updateFurniture'; id: string; changes: Partial<Furniture> }
+  | { type: 'updateFurniture'; id: string; changes: Partial<Omit<Furniture, 'id'>> }
   | { type: 'rotateFurniture'; id: string }
   | { type: 'setStairs'; rect: Rect | null }
   | { type: 'addUpperLevel' }
@@ -47,12 +47,8 @@ export function currentLevel(state: EditorState): Level {
   return state.plan.levels.find((l) => l.id === state.levelId) ?? state.plan.levels[0]!
 }
 
-/** Même règle que la règle 11 du domaine : empreinte contenue dans le rect, bords inclus. */
-const contains = (outer: Rect, inner: Rect) =>
-  inner.x >= outer.x && inner.y >= outer.y &&
-  inner.x + inner.w <= outer.x + outer.w && inner.y + inner.h <= outer.y + outer.h
-
-const inRoom = (room: Room, f: Furniture) => contains(room.rect, furnitureFootprint(f))
+/** Meuble « appartenant » à une pièce : empreinte contenue (règle 11 du domaine). */
+const inRoom = (room: Room, f: Furniture) => containsRect(room.rect, furnitureFootprint(f))
 
 const mapLevel = (plan: Plan, levelId: string, fn: (l: Level) => Level): Plan => ({
   ...plan, levels: plan.levels.map((l) => (l.id === levelId ? fn(l) : l)),
@@ -68,7 +64,18 @@ function commit(state: EditorState, plan: Plan, extra: Partial<EditorState> = {}
   }
 }
 
+/** Rotation de 90° autour du centre de l'empreinte (cm entiers). */
+function rotate90(f: Furniture): Furniture {
+  const fp = furnitureFootprint(f)
+  const r = { ...f, rotation: ((f.rotation + 90) % 360) as Furniture['rotation'] }
+  const nf = furnitureFootprint(r)
+  return { ...r, x: Math.round(fp.x + fp.w / 2 - nf.w / 2), y: Math.round(fp.y + fp.h / 2 - nf.h / 2) }
+}
+
 const levelOf = (plan: Plan, pick: (l: Level) => boolean) => plan.levels.find(pick)
+
+const validLevel = (plan: Plan, state: EditorState): Pick<EditorState, 'levelId'> =>
+  ({ levelId: plan.levels.some((l) => l.id === state.levelId) ? state.levelId : 'rdc' })
 
 export function editorReducer(state: EditorState, action: Action): EditorState {
   const { plan } = state
@@ -89,11 +96,11 @@ export function editorReducer(state: EditorState, action: Action): EditorState {
       return { ...state, savedPlan: action.plan }
 
     case 'addRoom':
-      return commit(state, mapLevel(plan, state.levelId, (l) => ({ ...l, rooms: [...l.rooms, action.room] })))
+      return commit(state, mapLevel(plan, currentLevel(state).id, (l) => ({ ...l, rooms: [...l.rooms, action.room] })))
     case 'addOpening':
-      return commit(state, mapLevel(plan, state.levelId, (l) => ({ ...l, openings: [...l.openings, action.opening] })))
+      return commit(state, mapLevel(plan, currentLevel(state).id, (l) => ({ ...l, openings: [...l.openings, action.opening] })))
     case 'addFurniture':
-      return commit(state, mapLevel(plan, state.levelId, (l) => ({ ...l, furniture: [...l.furniture, action.furniture] })))
+      return commit(state, mapLevel(plan, currentLevel(state).id, (l) => ({ ...l, furniture: [...l.furniture, action.furniture] })))
 
     case 'updateRoom': {
       const lvl = levelOf(plan, (l) => l.rooms.some((r) => r.id === action.id))
@@ -101,7 +108,9 @@ export function editorReducer(state: EditorState, action: Action): EditorState {
       return commit(state, mapLevel(plan, lvl.id, (l) => {
         const old = l.rooms.find((r) => r.id === action.id)!
         const next: Room = { ...old, ...action.changes }
-        const dx = next.rect.x - old.rect.x, dy = next.rect.y - old.rect.y
+        const pureMove = next.rect.w === old.rect.w && next.rect.h === old.rect.h
+        const dx = pureMove ? next.rect.x - old.rect.x : 0
+        const dy = pureMove ? next.rect.y - old.rect.y : 0
         return {
           ...l,
           rooms: l.rooms.map((r) => (r.id === old.id ? next : r)),
@@ -130,10 +139,11 @@ export function editorReducer(state: EditorState, action: Action): EditorState {
       return commit(state, mapLevel(plan, lvl.id, (l) => ({
         ...l,
         furniture: l.furniture.map((f) =>
-          f.id === action.id ? { ...f, rotation: ((f.rotation + 90) % 360) as Furniture['rotation'] } : f),
+          f.id === action.id ? rotate90(f) : f),
       })))
     }
     case 'setStairs':
+      if (action.rect && !plan.levels.some((l) => l.id === 'r1')) return state
       return commit(state, { ...plan, stairs: action.rect ? { rect: action.rect } : null })
 
     case 'addUpperLevel':
@@ -175,12 +185,12 @@ export function editorReducer(state: EditorState, action: Action): EditorState {
     case 'undo': {
       const prev = state.past[state.past.length - 1]
       if (!prev) return state
-      return { ...state, plan: prev, past: state.past.slice(0, -1), future: [plan, ...state.future], selection: null }
+      return { ...state, ...validLevel(prev, state), plan: prev, past: state.past.slice(0, -1), future: [plan, ...state.future], selection: null }
     }
     case 'redo': {
       const nxt = state.future[0]
       if (!nxt) return state
-      return { ...state, plan: nxt, past: [...state.past, plan].slice(-HISTORY_MAX), future: state.future.slice(1), selection: null }
+      return { ...state, ...validLevel(nxt, state), plan: nxt, past: [...state.past, plan].slice(-HISTORY_MAX), future: state.future.slice(1), selection: null }
     }
   }
 }
