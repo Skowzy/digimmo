@@ -106,16 +106,20 @@ function supprimerEtFocaliser(dispatch: ReturnType<typeof useEditor>['dispatch']
 
 const TAILLE_MIN = 10
 const TAILLE_MAX = 1000
-const analyseTaille = (texte: string): Analyse => {
+const analyseTaille = (max: number) => (texte: string): Analyse => {
   const cm = parseMeters(texte)
-  return cm === null || cm < TAILLE_MIN || cm > TAILLE_MAX
-    ? { ok: false, error: `Valeur entre ${formatMeters(TAILLE_MIN)} et ${formatMeters(TAILLE_MAX)}` } : { ok: true, value: cm }
+  return cm === null || cm < TAILLE_MIN || cm > max
+    ? { ok: false, error: `Valeur entre ${formatMeters(TAILLE_MIN)} et ${formatMeters(max)}` } : { ok: true, value: cm }
 }
 
 function PanneauMeuble({ f }: { f: Furniture }) {
   const { dispatch } = useEditor()
   const fp = furnitureFootprint(f)
   const modifier = (changes: Partial<Omit<Furniture, 'id'>>) => dispatch({ type: 'updateFurniture', id: f.id, changes })
+  const tourne = f.rotation === 90 || f.rotation === 270
+  // La largeur (resp. profondeur) occupe l'axe X (resp. Y) de l'empreinte, ou l'inverse quand le meuble est tourné.
+  const maxW = Math.min(TAILLE_MAX, MAX - (tourne ? f.y : f.x))
+  const maxD = Math.min(TAILLE_MAX, MAX - (tourne ? f.x : f.y))
   const analysePos = (taille: number) => (texte: string): Analyse => {
     const cm = parseMetersOrZero(texte)
     const max = MAX - taille
@@ -127,8 +131,8 @@ function PanneauMeuble({ f }: { f: Furniture }) {
       <Champ label="Libellé" committed={f.label} parse={analyseNom} onCommit={(v) => modifier({ label: String(v) })} />
       <Champ label="X (m)" mono committed={metres(f.x)} parse={analysePos(fp.w)} onCommit={(v) => modifier({ x: Number(v) })} />
       <Champ label="Y (m)" mono committed={metres(f.y)} parse={analysePos(fp.h)} onCommit={(v) => modifier({ y: Number(v) })} />
-      <Champ label="Largeur (m)" mono committed={metres(f.w)} parse={analyseTaille} onCommit={(v) => modifier({ w: Number(v) })} />
-      <Champ label="Profondeur (m)" mono committed={metres(f.d)} parse={analyseTaille} onCommit={(v) => modifier({ d: Number(v) })} />
+      <Champ label="Largeur (m)" mono committed={metres(f.w)} parse={analyseTaille(maxW)} onCommit={(v) => modifier({ w: Number(v) })} />
+      <Champ label="Profondeur (m)" mono committed={metres(f.d)} parse={analyseTaille(maxD)} onCommit={(v) => modifier({ d: Number(v) })} />
       <p className={styles.surface}>Rotation : <span className={styles.mono}>{f.rotation}°</span></p>
       <Button variant="secondary" size="sm" onClick={() => dispatch({ type: 'rotateFurniture', id: f.id })}>Tourner d'un quart de tour</Button>
       <Button variant="danger" size="sm" onClick={() => supprimerEtFocaliser(dispatch)}>Supprimer le meuble</Button>

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
@@ -37,8 +37,9 @@ function Plateau() {
 }
 function monter(plan: Plan, tool: Tool = 'furniture', selection: EditorState['selection'] = null, pending: string | null = null) {
   server.use(http.get('/api/catalog', () => HttpResponse.json(catalogue)))
+  const client = createQueryClient({ retry: false })
   render(
-    <QueryClientProvider client={createQueryClient({ retry: false })}>
+    <QueryClientProvider client={client}>
       <EditorProvider initial={{ ...initEditor(plan, site), tool, selection, pendingFurniture: pending }}>
         <CatalogPalette />
         <Plateau />
@@ -47,6 +48,7 @@ function monter(plan: Plan, tool: Tool = 'furniture', selection: EditorState['se
       </EditorProvider>
     </QueryClientProvider>,
   )
+  return client
 }
 const svg = () => screen.getByRole('img', { name: 'Plan du projet' })
 const pt = (x: number, y: number) => ({ pointerId: 1, button: 0, buttons: 1, clientX: x, clientY: y })
@@ -85,6 +87,14 @@ describe('palette du catalogue', () => {
     await lit()
     fireEvent.keyDown(svg(), { key: 'Escape' })
     expect(h.etat.pendingFurniture).toBeNull()
+  })
+  it('désarme si le catalogue ne contient plus le meuble armé', async () => {
+    const client = monter(planDe([grande]), 'furniture', null, 'lit2')
+    await lit()
+    expect(h.etat.pendingFurniture).toBe('lit2')
+    server.use(http.get('/api/catalog', () => HttpResponse.json(catalogue.filter((c) => c.id !== 'lit2'))))
+    await act(() => client.invalidateQueries({ queryKey: ['catalog'] }))
+    await waitFor(() => expect(h.etat.pendingFurniture).toBeNull())
   })
   it('catalogue en erreur : message + Réessayer, le plan fonctionne', async () => {
     server.use(http.get('/api/catalog', () => HttpResponse.json({ error: 'x' }, { status: 500 })))
@@ -233,7 +243,8 @@ describe('propriétés du meuble', () => {
     monter(planDe([grande], [f]), 'select', { kind: 'furniture', id: 'f1' })
     const l = screen.getByLabelText('Libellé')
     await userEvent.clear(l)
-    await userEvent.type(l, 'x'.repeat(61))
+    await userEvent.click(l)
+    await userEvent.paste('x'.repeat(61))
     await userEvent.tab()
     expect(meubles()[0]!.label).toBe('Lit double')
     const w = screen.getByLabelText('Largeur (m)')
@@ -245,5 +256,24 @@ describe('propriétés du meuble', () => {
     await userEvent.type(w, '2')
     await userEvent.tab()
     await waitFor(() => expect(meubles()[0]!.w).toBe(200))
+  })
+  it('largeur bornée par la position : x = 99 900, largeur 10,00 m refusée', async () => {
+    const g: Furniture = { ...f, x: 99_900, y: 0, rotation: 0 }
+    monter(planDe([], [g]), 'select', { kind: 'furniture', id: 'f1' })
+    const w = screen.getByLabelText('Largeur (m)')
+    await userEvent.clear(w)
+    await userEvent.type(w, '10')
+    await userEvent.tab()
+    expect(meubles()[0]!.w).toBe(140)
+    expect(await screen.findByText(/Valeur entre 0,10 m et 1,00 m/)).toBeInTheDocument()
+  })
+  it('rotation 90 : la largeur est bornée par y', async () => {
+    const g: Furniture = { ...f, x: 0, y: 99_900, rotation: 90 }
+    monter(planDe([], [g]), 'select', { kind: 'furniture', id: 'f1' })
+    const w = screen.getByLabelText('Largeur (m)')
+    await userEvent.clear(w)
+    await userEvent.type(w, '2')
+    await userEvent.tab()
+    expect(meubles()[0]!.w).toBe(140)
   })
 })

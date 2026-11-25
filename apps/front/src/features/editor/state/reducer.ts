@@ -71,12 +71,15 @@ function commit(state: EditorState, plan: Plan, extra: Partial<EditorState> = {}
  */
 function rotate90(f: Furniture): Furniture {
   const sens = f.rotation === 0 || f.rotation === 180 ? 1 : -1
-  return {
+  const r: Furniture = {
     ...f,
     rotation: ((f.rotation + 90) % 360) as Furniture['rotation'],
     x: f.x + sens * Math.floor((f.w - f.d) / 2),
     y: f.y + sens * Math.floor((f.d - f.w) / 2),
   }
+  // Au bord du repère, l'empreinte tournée est ramenée dans [0, 100000] (réversibilité exacte perdue à cet endroit).
+  const fp = furnitureFootprint(r)
+  return { ...r, x: Math.min(Math.max(r.x, 0), 100_000 - fp.w), y: Math.min(Math.max(r.y, 0), 100_000 - fp.h) }
 }
 
 const levelOf = (plan: Plan, pick: (l: Level) => boolean) => plan.levels.find(pick)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { rectangularSite, type Furniture, type Plan, type Room } from '@digimmo/domain'
+import { parsePlan, rectangularSite, type Furniture, type Plan, type Room } from '@digimmo/domain'
 import { currentLevel, editorReducer, initEditor, isDirty, type Action } from './reducer'
 import type { EditorState } from './types'
 
@@ -176,5 +176,23 @@ describe('isDirty', () => {
     const s0 = { ...init(vide()), pendingFurniture: 'lit' }
     expect(run(s0, { type: 'setTool', tool: 'select' }).pendingFurniture).toBeNull()
     expect(run(s0, { type: 'setTool', tool: 'furniture' }).pendingFurniture).toBe('lit')
+  })
+  it('rotateFurniture : un lit en x = 0 reste dans [0, 100000] et le plan est valide', () => {
+    const lit: Furniture = { id: 'f1', catalogId: 'lit', label: 'Lit', x: 0, y: 0, w: 140, d: 190, rotation: 0 }
+    const plan: Plan = { levels: [{ id: 'rdc', rooms: [], openings: [], furniture: [lit] }], stairs: null }
+    const f = currentLevel(run(init(plan), { type: 'rotateFurniture', id: 'f1' })).furniture[0]!
+    expect(f.x).toBeGreaterThanOrEqual(0)
+    expect(f.y).toBeGreaterThanOrEqual(0)
+    const plan2: Plan = { levels: [{ id: 'rdc', rooms: [], openings: [], furniture: [{ ...lit, w: 160, d: 60 }] }], stairs: null }
+    const g = currentLevel(run(init(plan2), { type: 'rotateFurniture', id: 'f1' })).furniture[0]!
+    expect(g.y).toBeGreaterThanOrEqual(0)
+    expect(() => parsePlan({ levels: [{ id: 'rdc', rooms: [], openings: [], furniture: [f] }], stairs: null })).not.toThrow()
+  })
+  it('rotateFurniture : près de 100000 l\'empreinte reste dans le repère', () => {
+    const lit: Furniture = { id: 'f1', catalogId: 'lit', label: 'Lit', x: 99_860, y: 99_810, w: 140, d: 190, rotation: 90 }
+    const plan: Plan = { levels: [{ id: 'rdc', rooms: [], openings: [], furniture: [lit] }], stairs: null }
+    const f = currentLevel(run(init(plan), { type: 'rotateFurniture', id: 'f1' })).furniture[0]!
+    expect(f.x + f.w).toBeLessThanOrEqual(100_000)
+    expect(f.y + f.d).toBeLessThanOrEqual(100_000)
   })
 })

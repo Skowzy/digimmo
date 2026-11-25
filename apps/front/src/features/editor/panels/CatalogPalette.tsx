@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useCatalog, type FurnitureItem } from '../../../lib/queries'
 import { Alert, Button } from '../../../ui'
 import { useEditor } from '../state/useEditor'
@@ -17,6 +18,9 @@ const metres = (cm: number) => (cm / 100).toFixed(2).replace('.', ',')
 export function CatalogPalette() {
   const { state, dispatch } = useEditor()
   const catalogue = useCatalog()
+  const { pendingFurniture } = state
+  const inconnu = catalogue.data !== undefined && pendingFurniture !== null && !catalogue.data.some((i) => i.id === pendingFurniture)
+  useEffect(() => { if (inconnu) dispatch({ type: 'armFurniture', catalogId: null }) }, [inconnu, dispatch])
   if (state.tool !== 'furniture') return null
   return (
     <section
