@@ -332,6 +332,27 @@ describe('cycle de vie et erreurs', () => {
     expect(queryClient.getQueryData<{ plan: Plan }>(['projects', 'p1', 'plan'])?.plan).toEqual(vide)
   })
 
+  it('démontage pendant un envoi qui réussit : le cache reçoit le plan envoyé, la réouverture le montre', async () => {
+    let liberer: () => void = () => {}
+    const s = serveur(vide, async () => {
+      await new Promise<void>((r) => { liberer = r })
+      return HttpResponse.json({ validation })
+    })
+    const { router, queryClient } = await ouvrir()
+    await modifier()
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    await waitFor(() => expect(s.puts).toHaveLength(1))
+    await act(async () => { await router.navigate('/projets') })
+    await userEvent.click(await screen.findByRole('button', { name: 'Quitter sans enregistrer' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/projets'))
+    liberer()
+    await waitFor(() => expect(queryClient.getQueryData<{ plan: Plan }>(['projects', 'p1', 'plan'])?.plan.levels).toHaveLength(2))
+    await act(async () => { await router.navigate('/projets/p1') })
+    await screen.findByRole('img', { name: 'Plan du projet' })
+    expect(screen.getByRole('tablist', { name: 'Niveaux' })).toBeInTheDocument()
+    expect(screen.getByText('Enregistré')).toBeInTheDocument()
+  })
+
   it('après un échec, revenir au plan enregistré (undo) efface l\'erreur', async () => {
     serveur(vide, () => HttpResponse.json({ message: 'Format de plan invalide.', issues: ['x: y'] }, { status: 400 }))
     await ouvrir()

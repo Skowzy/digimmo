@@ -62,8 +62,9 @@ export function useAutosave({ projectId, state, dispatch, delayMs = 3000 }: Opti
           `/projects/${projectId}/plan`, { method: 'PUT', body: plan },
         )
         savedRef.current = json(plan)
-        if (!alive.current) return true // démonté : plus de cache, de dispatch ni de nouvel essai
+        // Le serveur détient ce plan : le cache doit le refléter même si l'éditeur est démonté.
         queryClient.setQueryData(['projects', projectId, 'plan'], { plan, validation: res.validation })
+        if (!alive.current) return true // démonté : ni dispatch ni setState ni nouvel essai
         dispatch({ type: 'markSaved', plan })
         return true
       } catch (e) {
