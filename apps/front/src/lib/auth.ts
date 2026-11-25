@@ -39,9 +39,11 @@ export function useLogout() {
   const { pathname } = useLocation()
   const sortie = useRef(false)
 
-  // Réinitialiser `['me']` seulement une fois sur l'accueil : sinon RequireAuth renverrait vers /connexion.
+  // Réinitialiser `['me']` au premier changement de page après la déconnexion, quelle que soit
+  // la destination : la page protégée est quittée (sinon RequireAuth renverrait vers /connexion),
+  // et le drapeau ne peut pas rester levé si la navigation vers « / » est supplantée.
   useEffect(() => {
-    if (sortie.current && pathname === '/') {
+    if (sortie.current) {
       sortie.current = false
       resetSession(queryClient)
     }

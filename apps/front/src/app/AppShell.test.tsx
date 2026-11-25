@@ -1,8 +1,8 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { axe } from 'vitest-axe'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { server } from '../test/server'
 import { renderApp } from '../test/render'
 
@@ -37,6 +37,31 @@ describe('AppShell', () => {
     const nav = screen.getByRole('navigation')
     expect(await within(nav).findByRole('link', { name: 'Connexion' })).toBeInTheDocument()
     expect(within(nav).queryByRole('button', { name: 'Se déconnecter' })).not.toBeInTheDocument()
+  })
+
+  it('déconnexion dont la redirection est supplantée : une session rouverte ensuite n’est pas effacée', async () => {
+    const moi = { id: 'u1', email: 'a@b.fr', role: 'user' }
+    server.use(
+      http.get('/api/auth/me', () => HttpResponse.json(moi)),
+      http.get('/api/projects', () => HttpResponse.json([])),
+      http.post('/api/auth/logout', () => new HttpResponse(null, { status: 204 })),
+    )
+    const { router, queryClient } = renderApp('/projets')
+    const bouton = await screen.findByRole('button', { name: 'Se déconnecter' })
+    // La navigation vers « / » est supplantée (clic immédiat, 401 tardif…) : elle n’aboutit jamais.
+    const naviguer = router.navigate.bind(router)
+    vi.spyOn(router, 'navigate').mockImplementation((to, ...rest) =>
+      to === '/' ? Promise.resolve() : naviguer(to as never, ...(rest as [])),
+    )
+    await userEvent.click(bouton)
+    await act(() => naviguer('/connexion'))
+    // L’utilisateur se reconnecte, puis revient sur l’accueil.
+    act(() => queryClient.setQueryData(['me'], moi))
+    await act(() => naviguer('/'))
+    await act(() => new Promise((r) => setTimeout(r, 20)))
+    const nav = screen.getByRole('navigation')
+    expect(within(nav).queryByRole('link', { name: 'Connexion' })).not.toBeInTheDocument()
+    expect(within(nav).getByRole('button', { name: 'Se déconnecter' })).toBeInTheDocument()
   })
 
   it('affiche les liens connecté et le lien Catalogue pour un admin', async () => {
