@@ -187,6 +187,7 @@ export function PlanCanvas({ site, rules, violations }: Props) {
         ref={svgRef}
         role="img"
         aria-label="Plan du projet"
+        tabIndex={-1}
         className={classeSvg}
         viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`}
         onPointerDown={onPointerDown}

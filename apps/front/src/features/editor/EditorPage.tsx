@@ -6,6 +6,8 @@ import { ApiError } from '../../lib/api'
 import { usePlan, useProject } from '../../lib/queries'
 import { Alert, Button, ButtonLink, PageHeader } from '../../ui'
 import styles from './EditorPage.module.css'
+import { PropertiesPanel } from './panels/PropertiesPanel'
+import { RulesPanel } from './panels/RulesPanel'
 import { Toolbar } from './panels/Toolbar'
 import { PlanCanvas } from './canvas/PlanCanvas'
 import { EditorProvider } from './state/EditorContext'
@@ -67,8 +69,8 @@ function Editeur({ id, nom, site, rules }: { id: string; nom: string; site: Site
           <PlanCanvas site={site} rules={rules} violations={violations} />
         </div>
         <aside className={styles.panneaux} aria-label="Panneaux">
-          <section aria-labelledby="ed-proprietes"><h2 id="ed-proprietes">Propriétés</h2></section>
-          <section aria-labelledby="ed-regles"><h2 id="ed-regles">Règles</h2></section>
+          <PropertiesPanel />
+          <RulesPanel violations={violations} />
         </aside>
       </div>
     </div>
