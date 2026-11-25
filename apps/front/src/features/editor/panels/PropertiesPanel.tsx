@@ -81,12 +81,39 @@ const analyseNom = (texte: string): Analyse => {
 export function PropertiesPanel() {
   const { state } = useEditor()
   const sel = state.selection
-  const room = sel?.kind === 'room' ? currentLevel(state).rooms.find((r) => r.id === sel.id) : undefined
+  const level = currentLevel(state)
+  const room = sel?.kind === 'room' ? level.rooms.find((r) => r.id === sel.id) : undefined
+  let titre: string | undefined
+  if (sel?.kind === 'opening') {
+    const o = level.openings.find((x) => x.id === sel.id)
+    if (o) titre = o.kind === 'door' ? 'Porte' : 'Fenêtre'
+  } else if (sel?.kind === 'furniture') {
+    const f = level.furniture.find((x) => x.id === sel.id)
+    if (f) titre = `Meuble : ${f.label}`
+  } else if (sel?.kind === 'stairs' && state.plan.stairs) titre = 'Escalier'
   return (
     <section aria-labelledby="ed-proprietes" className={styles.panneau}>
       <h2 id="ed-proprietes">Propriétés</h2>
-      {room ? <PanneauPiece key={room.id} room={room} /> : <p>Sélectionnez un élément du plan.</p>}
+      {room ? <PanneauPiece key={room.id} room={room} />
+        : titre ? <PanneauElement titre={titre} />
+          : <p>Sélectionnez un élément du plan.</p>}
     </section>
+  )
+}
+
+function supprimerEtFocaliser(dispatch: ReturnType<typeof useEditor>['dispatch']) {
+  dispatch({ type: 'deleteSelection' })
+  document.querySelector<SVGSVGElement>('svg[aria-label="Plan du projet"]')?.focus()
+}
+
+/** Ouverture, meuble ou escalier : seule la suppression pour l'instant (les tâches 7 à 9 ajoutent leurs champs). */
+function PanneauElement({ titre }: { titre: string }) {
+  const { dispatch } = useEditor()
+  return (
+    <div className={styles.champs}>
+      <h3 className={styles.titreElement}>{titre}</h3>
+      <Button variant="danger" size="sm" onClick={() => supprimerEtFocaliser(dispatch)}>Supprimer</Button>
+    </div>
   )
 }
 
@@ -112,10 +139,7 @@ function PanneauPiece({ room }: { room: Room }) {
       <Button
         variant="danger"
         size="sm"
-        onClick={() => {
-          dispatch({ type: 'deleteSelection' })
-          document.querySelector<SVGSVGElement>('svg[aria-label="Plan du projet"]')?.focus()
-        }}
+        onClick={() => supprimerEtFocaliser(dispatch)}
       >
         Supprimer la pièce
       </Button>
