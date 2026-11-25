@@ -192,7 +192,7 @@ export function PlanCanvas({ site, rules, violations }: Props) {
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={(e) => { if (!finPan(e)) gesture.handlers.onPointerUp(e) }}
-        onPointerCancel={(e) => { if (!finPan(e)) gesture.handlers.onPointerCancel() }}
+        onPointerCancel={(e) => { if (!finPan(e)) gesture.handlers.onPointerCancel(e) }}
         onLostPointerCapture={gesture.handlers.onLostPointerCapture}
       >
         <defs>
@@ -222,7 +222,7 @@ export function PlanCanvas({ site, rules, violations }: Props) {
         ))}
         {autre?.rooms.map((r) => <RoomShape key={r.id} room={r} fantome />)}
         {level.rooms.map((r) => <RoomShape key={r.id} room={r} enErreur={enErreur.has(r.id)} />)}
-        {selRect && (
+        {selRect && !gesture.apercu && (
           <rect className={styles.selection} x={selRect.x} y={selRect.y} width={selRect.w} height={selRect.h} />
         )}
         {gesture.apercu && (

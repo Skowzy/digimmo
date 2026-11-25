@@ -9,8 +9,8 @@ const CLASSE: Record<ResizeEdge, string> = {
 
 /** 8 poignées de redimensionnement, dimensionnées en pixels écran (cmParPx = cm par pixel). */
 export function SelectionHandles({ rect, cmParPx, taillePx = 10 }: { rect: Rect; cmParPx: number; taillePx?: number }) {
-  const s = taillePx * cmParPx
   const { x, y, w, h } = rect
+  const s = Math.min(taillePx * cmParPx, Math.min(w, h) / 3) // reste de la place pour saisir la pièce
   const pos: Record<ResizeEdge, [number, number]> = {
     nw: [x, y], n: [x + w / 2, y], ne: [x + w, y],
     e: [x + w, y + h / 2], se: [x + w, y + h], s: [x + w / 2, y + h],

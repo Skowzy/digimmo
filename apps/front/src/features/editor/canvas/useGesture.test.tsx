@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { act, useEffect } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { DEFAULT_RULE_PARAMS, rectangularSite, type Plan, type Room } from '@digimmo/domain'
+import { DEFAULT_RULE_PARAMS, parsePlan, rectangularSite, type Plan, type Room } from '@digimmo/domain'
 import { PlanCanvas } from './PlanCanvas'
 import { EditorProvider } from '../state/EditorContext'
 import { currentLevel, initEditor } from '../state/reducer'
@@ -28,7 +28,7 @@ function monter(rooms: Room[] = [salon], tool: Tool = 'select') {
   )
 }
 const svg = () => screen.getByRole('img', { name: 'Plan du projet' })
-const pt = (x: number, y: number, extra = {}) => ({ pointerId: 1, button: 0, clientX: x, clientY: y, ...extra })
+const pt = (x: number, y: number, extra = {}) => ({ pointerId: 1, button: 0, buttons: 1, clientX: x, clientY: y, ...extra })
 const rooms = () => currentLevel(h.etat).rooms
 const glisser = (el: Element, a: [number, number], b: [number, number]) => {
   fireEvent.pointerDown(el, pt(...a))
@@ -163,5 +163,98 @@ describe('aimantage : candidats proches uniquement', () => {
     largeSvg()
     glisser(salonEl(), [600, 600], [1107, 600])
     expect(rooms()[0]!.rect.x).toBe(1010)
+  })
+})
+
+describe('robustesse des gestes (revue)', () => {
+  it('lostpointercapture venu de la pièce (capture implicite) n\'annule pas le déplacement', () => {
+    monter()
+    fireEvent.pointerDown(salonEl(), pt(600, 600))
+    fireEvent.pointerMove(svg(), pt(700, 600))
+    fireEvent.lostPointerCapture(salonEl(), pt(700, 600))
+    fireEvent.pointerUp(svg(), pt(700, 600))
+    expect(rooms()[0]!.rect.x).toBe(600)
+  })
+  it('un pointercancel d\'un autre doigt n\'annule pas le geste', () => {
+    monter()
+    fireEvent.pointerDown(salonEl(), pt(600, 600))
+    fireEvent.pointerMove(svg(), pt(700, 600))
+    fireEvent.pointerCancel(svg(), pt(700, 600, { pointerId: 2 }))
+    fireEvent.pointerUp(svg(), pt(700, 600))
+    expect(rooms()[0]!.rect.x).toBe(600)
+  })
+  it('dessin vers les coordonnées négatives : x, y >= 0 et plan valide', () => {
+    monter([], 'room')
+    glisser(svg(), [-50, -80], [200, 200])
+    expect(rooms()[0]!.rect.x).toBeGreaterThanOrEqual(0)
+    expect(rooms()[0]!.rect.y).toBeGreaterThanOrEqual(0)
+    expect(parsePlan(h.etat.plan).ok).toBe(true)
+  })
+  it('un clic près de l\'origine reste dans le repère', () => {
+    monter([], 'room')
+    glisser(svg(), [20, 30], [20, 30])
+    expect(rooms()[0]!.rect).toEqual({ x: 0, y: 0, w: 300, h: 300 })
+  })
+  it('déplacer au-delà de 0 bute à 0', () => {
+    monter()
+    glisser(salonEl(), [600, 600], [-900, -900])
+    expect(rooms()[0]!.rect).toEqual({ x: 0, y: 0, w: 600, h: 400 })
+    expect(parsePlan(h.etat.plan).ok).toBe(true)
+  })
+  it('redimensionner au-delà de 0 plafonne le bord à 0', () => {
+    monter()
+    glisser(salonEl(), [600, 600], [600, 600])
+    glisser(document.querySelector('[data-handle="w"]')!, [500, 700], [-300, 700])
+    expect(rooms()[0]!.rect).toEqual({ x: 0, y: 500, w: 1100, h: 400 })
+  })
+  it('geste périmé : pointermove sans bouton annule, rien n\'est envoyé', () => {
+    monter()
+    fireEvent.pointerDown(salonEl(), pt(600, 600))
+    fireEvent.pointerMove(svg(), pt(700, 600))
+    fireEvent.pointerMove(svg(), pt(800, 600, { buttons: 0 }))
+    fireEvent.pointerUp(svg(), pt(800, 600, { buttons: 0 }))
+    expect(rooms()[0]!.rect).toEqual(salon.rect)
+    expect(h.etat.past).toHaveLength(0)
+    expect(document.querySelector('[class*="apercu"]')).toBeNull()
+  })
+  it('un nouveau pointerdown remplace un geste périmé', () => {
+    monter()
+    fireEvent.pointerDown(salonEl(), pt(600, 600))
+    fireEvent.pointerDown(salonEl(), pt(600, 600))
+    fireEvent.pointerMove(svg(), pt(700, 600))
+    fireEvent.pointerUp(svg(), pt(700, 600))
+    expect(rooms()[0]!.rect.x).toBe(600)
+  })
+  it('le blur de la fenêtre annule le geste', () => {
+    monter()
+    fireEvent.pointerDown(salonEl(), pt(600, 600))
+    fireEvent.pointerMove(svg(), pt(700, 600))
+    fireEvent.blur(window)
+    fireEvent.pointerUp(svg(), pt(700, 600))
+    expect(rooms()[0]!.rect).toEqual(salon.rect)
+  })
+  it('Échap n\'est intercepté que pendant un geste', () => {
+    monter()
+    const libre = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true, bubbles: true })
+    window.dispatchEvent(libre)
+    expect(libre.defaultPrevented).toBe(false)
+    fireEvent.pointerDown(salonEl(), pt(600, 600))
+    fireEvent.pointerMove(svg(), pt(700, 600))
+    const actif = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true, bubbles: true })
+    act(() => { window.dispatchEvent(actif) })
+    expect(actif.defaultPrevented).toBe(true)
+  })
+  it('petite pièce : les poignées sont plafonnées au tiers de la pièce', () => {
+    monter([{ id: 's1', type: 'autre', name: 'P', rect: { x: 1000, y: 1000, w: 60, h: 60 } }])
+    glisser(salonEl(), [1030, 1030], [1030, 1030])
+    for (const hd of document.querySelectorAll('[data-handle]')) expect(Number(hd.getAttribute('width'))).toBeLessThanOrEqual(20)
+  })
+  it('le contour de sélection d\'origine est masqué pendant l\'aperçu', () => {
+    monter()
+    glisser(salonEl(), [600, 600], [600, 600])
+    expect(document.querySelector('[class*="selection"]')).not.toBeNull()
+    fireEvent.pointerDown(salonEl(), pt(600, 600))
+    fireEvent.pointerMove(svg(), pt(700, 600))
+    expect(document.querySelector('[class*="selection"]')).toBeNull()
   })
 })
