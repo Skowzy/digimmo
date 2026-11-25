@@ -13,8 +13,11 @@ import { RulesPanel } from './panels/RulesPanel'
 import { Toolbar } from './panels/Toolbar'
 import { PlanCanvas } from './canvas/PlanCanvas'
 import { EditorProvider } from './state/EditorContext'
-import { initEditor } from './state/reducer'
+import { initEditor, isDirty } from './state/reducer'
 import { useEditor } from './state/useEditor'
+import { useAutosave } from './save/useAutosave'
+import { SaveStatus } from './panels/SaveStatus'
+import { LeaveGuard } from './panels/LeaveGuard'
 
 export function EditorPage() {
   const { id = '' } = useParams()
@@ -55,7 +58,8 @@ export function EditorPage() {
 }
 
 function Editeur({ id, nom, site, rules }: { id: string; nom: string; site: Site; rules: RuleParams }) {
-  const { state } = useEditor()
+  const { state, dispatch } = useEditor()
+  const { status, saveNow, lastError } = useAutosave({ projectId: id, state, dispatch })
   const catalogue = useCatalog()
   const violations = useMemo(() => validatePlan(site, rules, state.plan), [state.plan, site, rules])
   return (
@@ -63,7 +67,8 @@ function Editeur({ id, nom, site, rules }: { id: string; nom: string; site: Site
       <header className={styles.entete}>
         <h1 className={styles.titre}>{nom}</h1>
         <Link to={`/projets/${id}/parametres`}>Paramètres du projet</Link>
-        <div className={styles.sauvegarde} data-slot="sauvegarde" />
+        <div className={styles.sauvegarde}><SaveStatus status={status} saveNow={saveNow} lastError={lastError} /></div>
+        <LeaveGuard dirty={isDirty(state)} saving={status === 'saving'} saveNow={saveNow} />
       </header>
       <p className={styles.etroit}>L'éditeur est prévu pour un écran d'ordinateur.</p>
       <div className={styles.zones}>
