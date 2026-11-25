@@ -100,8 +100,10 @@ export class PlansService {
       levels: doc.levels,
       stairs: doc.stairs,
     });
+    // Seulement si le plan n'a pas changé depuis la lecture : sinon la sauvegarde plus récente
+    // a déjà validé avec les règles à jour, et on écraserait son résultat par celui d'un plan périmé.
     await this.model.updateOne(
-      { projectId: project.id },
+      { projectId: project.id, updatedAt: doc.updatedAt },
       {
         $set: {
           validation: {

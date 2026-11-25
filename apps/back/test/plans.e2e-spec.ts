@@ -1,6 +1,13 @@
 import { getConnectionToken } from '@nestjs/mongoose';
 import type { Connection } from 'mongoose';
 import { DEFAULT_RULE_PARAMS } from '@digimmo/domain';
+import { getModelToken } from '@nestjs/mongoose';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import type { Model } from 'mongoose';
+import type { Repository } from 'typeorm';
+import { PlanDoc } from '../src/plans/plan.schema';
+import { PlansService } from '../src/plans/plans.service';
+import { Project } from '../src/projects/project.entity';
 import { createTestApp } from './utils/test-app';
 
 const PASSWORD = 'motdepasse-solide';
@@ -112,6 +119,28 @@ describe('Plans', () => {
       .get<Connection>(getConnectionToken())
       .db!.collection('plans')
       .countDocuments();
+
+  it('une revalidation qui a lu une ancienne version du plan ne l’écrase pas', async () => {
+    const c = await session('a@example.com');
+    const id = await project(c);
+    await put(c, id, DEMO).expect(200);
+    const model = ctx.app.get<Model<PlanDoc>>(getModelToken(PlanDoc.name));
+    const stale = await model.findOne({ projectId: id }).lean();
+    // Une sauvegarde plus récente arrive pendant la revalidation : ici, un plan aux pièces qui se chevauchent
+    // est lu par la revalidation (version périmée), alors que le plan stocké a changé entre-temps.
+    const overlapping = JSON.parse(JSON.stringify(DEMO)) as typeof DEMO;
+    overlapping.levels[0].rooms[1].rect.x = 1000;
+    jest.spyOn(model, 'findOne').mockReturnValueOnce({
+      lean: () => Promise.resolve({ ...stale, levels: overlapping.levels }),
+    } as never);
+    await new Promise((r) => setTimeout(r, 5));
+    await put(c, id, DEMO).expect(200); // la version stockée change (updatedAt)
+    const entity = await ctx.app
+      .get<Repository<Project>>(getRepositoryToken(Project))
+      .findOneByOrFail({ id });
+    await ctx.app.get(PlansService).revalidate(entity);
+    expect(codes(await getPlan(c, id))).toEqual([]);
+  });
 
   it("GET d'un projet neuf : plan vide, aucune violation, rien d'écrit", async () => {
     const c = await session('a@example.com');
