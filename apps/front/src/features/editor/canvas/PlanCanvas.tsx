@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { formatMeters, type RuleParams, type Site, type Violation } from '@digimmo/domain'
-import { Button } from '../../../ui'
+import { Alert, Button } from '../../../ui'
 import { svgPoint } from '../geometry/svgPoint'
 import { currentLevel, initEditor } from '../state/reducer'
 import type { View } from '../state/types'
 import { useEditor } from '../state/useEditor'
 import styles from './PlanCanvas.module.css'
 import { RoomShape } from './RoomShape'
+import { SelectionHandles } from './SelectionHandles'
+import { LIMITE_PIECES, useGesture } from './useGesture'
 
 const FACTEUR = 1.2
 const MIN = 1 / 8 // 800 %
@@ -58,6 +60,7 @@ export function PlanCanvas({ site, rules, violations }: Props) {
   const envoyee = useRef(state.view)
   const fit = useMemo(() => initEditor({ levels: [], stairs: null }, site).view, [site])
   const [ratio, setRatio] = useState<number | null>(null)
+  const [pxW, setPxW] = useState(0)
   const [espace, setEspace] = useState(false)
   const [panne, setPanne] = useState(false)
   const pan = useRef<{ id: number; cx: number; cy: number; view: View; pxW: number } | null>(null)
@@ -79,7 +82,7 @@ export function PlanCanvas({ site, rules, violations }: Props) {
     if (!el || typeof ResizeObserver === 'undefined') return
     const ro = new ResizeObserver(() => {
       const r = el.getBoundingClientRect()
-      if (r.width > 0 && r.height > 0) setRatio(r.width / r.height)
+      if (r.width > 0 && r.height > 0) { setRatio(r.width / r.height); setPxW(r.width) }
     })
     ro.observe(el)
     return () => ro.disconnect()
@@ -136,8 +139,9 @@ export function PlanCanvas({ site, rules, violations }: Props) {
     }
   }, [])
 
+  const gesture = useGesture()
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (!(e.button === 1 || (espace && e.button === 0))) return
+    if (!(e.button === 1 || (espace && e.button === 0))) { gesture.handlers.onPointerDown(e); return }
     const pxW = e.currentTarget.getBoundingClientRect().width
     if (!pxW) return
     e.preventDefault()
@@ -147,15 +151,16 @@ export function PlanCanvas({ site, rules, violations }: Props) {
   }
   const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
     const p = pan.current
-    if (!p || p.id !== e.pointerId) return
+    if (!p || p.id !== e.pointerId) { gesture.handlers.onPointerMove(e); return }
     const cmParPx = p.view.width / p.pxW
     setView({ ...p.view, x: p.view.x - (e.clientX - p.cx) * cmParPx, y: p.view.y - (e.clientY - p.cy) * cmParPx })
   }
   const finPan = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (!pan.current || pan.current.id !== e.pointerId) return
+    if (!pan.current || pan.current.id !== e.pointerId) return false
     e.currentTarget.releasePointerCapture?.(e.pointerId)
     pan.current = null
     setPanne(false)
+    return true
   }
 
   const level = currentLevel(state)
@@ -174,7 +179,7 @@ export function PlanCanvas({ site, rules, violations }: Props) {
   const sel = state.selection
   const selRect = sel?.kind === 'room' ? level.rooms.find((r) => r.id === sel.id)?.rect
     : sel?.kind === 'stairs' ? state.plan.stairs?.rect : undefined
-  const classeSvg = [styles.svg, espace && styles.pan, panne && styles.panActif].filter(Boolean).join(' ')
+  const classeSvg = [styles.svg, state.tool === 'room' && styles.curseurPiece, espace && styles.pan, panne && styles.panActif].filter(Boolean).join(' ')
 
   return (
     <div className={styles.zone}>
@@ -186,8 +191,9 @@ export function PlanCanvas({ site, rules, violations }: Props) {
         viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
-        onPointerUp={finPan}
-        onPointerCancel={finPan}
+        onPointerUp={(e) => { if (!finPan(e)) gesture.handlers.onPointerUp(e) }}
+        onPointerCancel={(e) => { if (!finPan(e)) gesture.handlers.onPointerCancel() }}
+        onLostPointerCapture={gesture.handlers.onLostPointerCapture}
       >
         <defs>
           <pattern id="grille-10" width={10} height={10} patternUnits="userSpaceOnUse">
@@ -219,7 +225,14 @@ export function PlanCanvas({ site, rules, violations }: Props) {
         {selRect && (
           <rect className={styles.selection} x={selRect.x} y={selRect.y} width={selRect.w} height={selRect.h} />
         )}
+        {gesture.apercu && (
+          <rect className={styles.apercu} x={gesture.apercu.x} y={gesture.apercu.y} width={gesture.apercu.w} height={gesture.apercu.h} />
+        )}
+        {sel?.kind === 'room' && state.tool === 'select' && selRect && (
+          <SelectionHandles rect={gesture.apercu ? gesture.apercu : selRect} cmParPx={view.width / (pxW || 1000)} />
+        )}
       </svg>
+      {gesture.limite && <div className={styles.limite}><Alert tone="warning">{LIMITE_PIECES}</Alert></div>}
       <div className={styles.outils} role="group" aria-label="Zoom">
         <Button variant="secondary" size="sm" aria-label="Zoom avant" onClick={() => zoomer(FACTEUR)}>+</Button>
         <Button variant="secondary" size="sm" aria-label="Zoom arrière" onClick={() => zoomer(1 / FACTEUR)}>−</Button>

@@ -25,3 +25,12 @@
   position: absolute; top: var(--esp-2); right: var(--esp-2);
   display: flex; gap: var(--esp-1);
 }
+
+.curseurPiece { cursor: crosshair; }
+.apercu { fill: none; stroke: var(--encre); stroke-width: 2; stroke-dasharray: 8 4; vector-effect: non-scaling-stroke; pointer-events: none; }
+.poignee { fill: var(--blanc); stroke: var(--encre); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.curN { cursor: ns-resize; }
+.curE { cursor: ew-resize; }
+.curNE { cursor: nesw-resize; }
+.curNW { cursor: nwse-resize; }
+.limite { position: absolute; left: var(--esp-2); bottom: var(--esp-2); right: var(--esp-2); }

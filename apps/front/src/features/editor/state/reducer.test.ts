@@ -143,4 +143,26 @@ describe('isDirty', () => {
     expect(isDirty(run(s1, { type: 'markSaved', plan: s1.plan }))).toBe(false)
     expect(isDirty(run(s1, { type: 'undo' }))).toBe(false)
   })
+
+  describe('déplacement et ouvertures', () => {
+    const A: Room = { id: 'a', type: 'sejour', name: 'A', rect: { x: 0, y: 0, w: 400, h: 300 } }
+    const B: Room = { id: 'b', type: 'chambre', name: 'B', rect: { x: 400, y: 0, w: 300, h: 300 } }
+    const ext = { id: 'o1', kind: 'door' as const, orientation: 'h' as const, fixed: 0, start: 100, width: 90 }
+    const int = { id: 'o2', kind: 'door' as const, orientation: 'v' as const, fixed: 400, start: 100, width: 90 }
+    const extV = { id: 'o3', kind: 'window' as const, orientation: 'v' as const, fixed: 0, start: 50, width: 100 }
+    const plan = (): Plan => ({
+      levels: [{ id: 'rdc', rooms: [A, B], openings: [ext, int, extV], furniture: [] }], stairs: null,
+    })
+    it('un déplacement pur translate les ouvertures des murs extérieurs de la pièce seulement', () => {
+      const s = run(init(plan()), { type: 'updateRoom', id: 'a', changes: { rect: { x: 20, y: 30, w: 400, h: 300 } } })
+      const o = Object.fromEntries(currentLevel(s).openings.map((x) => [x.id, x]))
+      expect(o.o1).toMatchObject({ fixed: 30, start: 120 })
+      expect(o.o3).toMatchObject({ fixed: 20, start: 80 })
+      expect(o.o2).toMatchObject({ fixed: 400, start: 100 })
+    })
+    it('un redimensionnement ne déplace aucune ouverture', () => {
+      const s = run(init(plan()), { type: 'updateRoom', id: 'a', changes: { rect: { x: 0, y: 0, w: 450, h: 300 } } })
+      expect(currentLevel(s).openings).toEqual([ext, int, extV])
+    })
+  })
 })

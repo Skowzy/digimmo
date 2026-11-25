@@ -1,5 +1,5 @@
 import type { Furniture, Level, Opening, Plan, Rect, Room, Site } from '@digimmo/domain'
-import { containsRect, furnitureFootprint } from '@digimmo/domain'
+import { computeWallSegments, containsRect, furnitureFootprint } from '@digimmo/domain'
 import type { EditorState, Selection, Tool, View } from './types'
 
 export const HISTORY_MAX = 100
@@ -111,9 +111,17 @@ export function editorReducer(state: EditorState, action: Action): EditorState {
         const pureMove = next.rect.w === old.rect.w && next.rect.h === old.rect.h
         const dx = pureMove ? next.rect.x - old.rect.x : 0
         const dy = pureMove ? next.rect.y - old.rect.y : 0
+        const moved = dx !== 0 || dy !== 0
+        // Ouvertures sur les murs extérieurs de la pièce (segments qu'elle seule borde), calculées avant le déplacement.
+        const murs = moved ? computeWallSegments(l.rooms).filter((s) => s.roomIds.length === 1 && s.roomIds[0] === old.id) : []
+        const surMur = (o: Opening) => murs.some((s) =>
+          s.orientation === o.orientation && s.fixed === o.fixed && o.start >= s.start && o.start + o.width <= s.end)
         return {
           ...l,
           rooms: l.rooms.map((r) => (r.id === old.id ? next : r)),
+          openings: !moved ? l.openings : l.openings.map((o) => !surMur(o) ? o
+            : o.orientation === 'h' ? { ...o, start: o.start + dx, fixed: o.fixed + dy }
+              : { ...o, start: o.start + dy, fixed: o.fixed + dx }),
           furniture: dx === 0 && dy === 0 ? l.furniture
             : l.furniture.map((f) => (inRoom(old, f) ? { ...f, x: f.x + dx, y: f.y + dy } : f)),
         }

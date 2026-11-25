@@ -54,8 +54,9 @@ function nouveauPoint(x = 0, y = 0): DOMPoint {
   return {
     x,
     y,
-    matrixTransform(m: Matrice) {
-      return nouveauPoint(m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f)
+    matrixTransform(this: { x: number; y: number }, m: Matrice) {
+      // x et y sont lus sur le point (ils sont assignés après création) et non sur la fermeture.
+      return nouveauPoint(m.a * this.x + m.c * this.y + m.e, m.b * this.x + m.d * this.y + m.f)
     },
   } as unknown as DOMPoint
 }
