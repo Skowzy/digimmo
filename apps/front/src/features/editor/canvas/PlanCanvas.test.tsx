@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { act } from 'react'
+import { describe, expect, it, vi } from 'vitest'
 import { DEFAULT_RULE_PARAMS, rectangularSite, type Plan, type Violation } from '@digimmo/domain'
 import { PlanCanvas } from './PlanCanvas'
 import { EditorProvider } from '../state/EditorContext'
@@ -77,5 +78,60 @@ describe('PlanCanvas', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Zoom avant' }))
     await userEvent.click(screen.getByRole('button', { name: 'Ajuster au terrain' }))
     expect(screen.getByRole('img', { name: 'Plan du projet' }).getAttribute('viewBox')).toBe(initiale)
+  })
+
+  const svg = () => screen.getByRole('img', { name: 'Plan du projet' })
+  const vb = () => svg().getAttribute('viewBox')
+
+  it('molette : le facteur dépend du delta (cran de souris ~1,16, pavé tactile ~1,006)', () => {
+    monter()
+    const w0 = largeur()
+    fireEvent.wheel(svg(), { deltaY: -100 })
+    expect(w0 / largeur()).toBeCloseTo(Math.exp(0.15), 2)
+    const w1 = largeur()
+    fireEvent.wheel(svg(), { deltaY: -4 })
+    expect(w1 / largeur()).toBeCloseTo(1.006, 3)
+  })
+
+  it('molette : deux événements consécutifs se composent sans rendu intermédiaire', () => {
+    monter()
+    const w0 = largeur()
+    act(() => {
+      svg().dispatchEvent(new WheelEvent('wheel', { deltaY: -100, cancelable: true }))
+      svg().dispatchEvent(new WheelEvent('wheel', { deltaY: -100, cancelable: true }))
+    })
+    expect(w0 / largeur()).toBeCloseTo(Math.exp(0.15) ** 2, 2)
+  })
+
+  it('Zoom arrière ne zoome pas en avant quand la vue dépasse déjà la borne', async () => {
+    monter()
+    for (let i = 0; i < 40; i++) await userEvent.click(screen.getByRole('button', { name: 'Zoom arrière' }))
+    const max = largeur()
+    for (let i = 0; i < 3; i++) fireEvent.wheel(svg(), { deltaY: 100 })
+    expect(largeur()).toBeCloseTo(max, 1)
+  })
+
+  describe('déplacement', () => {
+    const pan = () => {
+      vi.spyOn(svg(), 'getBoundingClientRect').mockReturnValue({ width: 1000, height: 800 } as DOMRect)
+      fireEvent.pointerDown(svg(), { button: 0, clientX: 100, clientY: 100 })
+      fireEvent.pointerMove(svg(), { clientX: 200, clientY: 100 })
+      fireEvent.pointerUp(svg())
+    }
+    it('Espace + glisser déplace la vue', () => {
+      monter()
+      const avant = vb()
+      fireEvent.keyDown(window, { code: 'Space' })
+      pan()
+      expect(vb()).not.toBe(avant)
+    })
+    it('le blur de la fenêtre relâche Espace', () => {
+      monter()
+      const avant = vb()
+      fireEvent.keyDown(window, { code: 'Space' })
+      fireEvent.blur(window)
+      pan()
+      expect(vb()).toBe(avant)
+    })
   })
 })

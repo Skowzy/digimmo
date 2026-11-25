@@ -55,14 +55,17 @@ export function PlanCanvas({ site, rules, violations }: Props) {
   const { state, dispatch } = useEditor()
   const svgRef = useRef<SVGSVGElement>(null)
   const viewRef = useRef(state.view)
-  useEffect(() => { viewRef.current = state.view }, [state.view])
   const fit = useMemo(() => initEditor({ levels: [], stairs: null }, site).view, [site])
   const [ratio, setRatio] = useState<number | null>(null)
   const [espace, setEspace] = useState(false)
   const [panne, setPanne] = useState(false)
   const pan = useRef<{ id: number; cx: number; cy: number; view: View; pxW: number } | null>(null)
 
-  const setView = useCallback((view: View) => dispatch({ type: 'setView', view }), [dispatch])
+  // La ref est mise à jour de façon synchrone : plusieurs événements dans une même image partent de la vue à jour.
+  const setView = useCallback((view: View) => {
+    viewRef.current = view
+    dispatch({ type: 'setView', view })
+  }, [dispatch])
 
   // Ratio de l'écran (ResizeObserver absent en jsdom : on garde le ratio courant).
   useEffect(() => {
@@ -90,7 +93,7 @@ export function PlanCanvas({ site, rules, violations }: Props) {
 
   const zoomer = useCallback((facteur: number, ancre?: { x: number; y: number }) => {
     const v = viewRef.current
-    const largeur = Math.min(fit.width * MAX, Math.max(fit.width * MIN, v.width / facteur))
+    const largeur = Math.min(Math.max(fit.width * MAX, v.width), Math.max(Math.min(fit.width * MIN, v.width), v.width / facteur))
     const k = largeur / v.width
     if (k === 1) return
     const p = ancre ?? { x: v.x + v.width / 2, y: v.y + v.height / 2 }
@@ -103,7 +106,8 @@ export function PlanCanvas({ site, rules, violations }: Props) {
     if (!el) return
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()
-      zoomer(e.deltaY < 0 ? FACTEUR : 1 / FACTEUR, svgPoint(el, e.clientX, e.clientY))
+      const delta = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1)
+      zoomer(Math.exp(-delta * 0.0015), svgPoint(el, e.clientX, e.clientY))
     }
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
@@ -115,9 +119,15 @@ export function PlanCanvas({ site, rules, violations }: Props) {
       t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(t.tagName))
     const bas = (e: KeyboardEvent) => { if (e.code === 'Space' && !estSaisie(e.target)) { setEspace(true); e.preventDefault() } }
     const haut = (e: KeyboardEvent) => { if (e.code === 'Space') setEspace(false) }
+    const perdu = () => setEspace(false)
     window.addEventListener('keydown', bas)
     window.addEventListener('keyup', haut)
-    return () => { window.removeEventListener('keydown', bas); window.removeEventListener('keyup', haut) }
+    window.addEventListener('blur', perdu)
+    return () => {
+      window.removeEventListener('keydown', bas)
+      window.removeEventListener('keyup', haut)
+      window.removeEventListener('blur', perdu)
+    }
   }, [])
 
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
