@@ -1,0 +1,117 @@
+import { describe, expect, it } from 'vitest'
+import { rectangularSite, type Furniture, type Plan, type Room } from '@digimmo/domain'
+import { currentLevel, editorReducer, initEditor, isDirty, type Action } from './reducer'
+import type { EditorState } from './types'
+
+function deepFreeze<T>(o: T): T {
+  if (o && typeof o === 'object') {
+    Object.values(o).forEach(deepFreeze)
+    Object.freeze(o)
+  }
+  return o
+}
+
+const room: Room = { id: 'r1', type: 'sejour', name: 'Salon', rect: { x: 0, y: 0, w: 400, h: 300 } }
+const meuble: Furniture = { id: 'f1', catalogId: 'canape', label: 'Canapé', x: 50, y: 50, w: 100, d: 80, rotation: 270 }
+const vide = (): Plan => ({ levels: [{ id: 'rdc', rooms: [], openings: [], furniture: [] }], stairs: null })
+const avecPiece = (): Plan => ({
+  levels: [{ id: 'rdc', rooms: [room], openings: [], furniture: [meuble] }], stairs: null,
+})
+const init = (plan: Plan = vide()): EditorState => deepFreeze(initEditor(plan, rectangularSite(2000, 3000, 'south')))
+const run = (s: EditorState, ...actions: Action[]) => actions.reduce(editorReducer, s)
+
+describe('initEditor', () => {
+  it('démarre au RDC avec la vue du terrain + 10 %', () => {
+    const s = init()
+    expect(s.levelId).toBe('rdc')
+    expect(s.tool).toBe('select')
+    expect(s.selection).toBeNull()
+    expect(s.savedPlan).toBe(s.plan)
+    expect(s.view.width).toBeCloseTo(2400)
+    expect(s.view.height).toBeCloseTo(3600)
+  })
+})
+
+describe('historique', () => {
+  it('addRoom puis undo / redo', () => {
+    const s0 = init()
+    const s1 = run(s0, { type: 'addRoom', room })
+    expect(currentLevel(s1).rooms).toHaveLength(1)
+    const s2 = run(s1, { type: 'undo' })
+    expect(s2.plan).toEqual(s0.plan)
+    const s3 = run(s2, { type: 'redo' })
+    expect(currentLevel(s3).rooms).toEqual([room])
+  })
+  it('limite à 100 entrées', () => {
+    let s = init()
+    for (let i = 0; i < 101; i++) s = run(s, { type: 'addRoom', room: { ...room, id: `r${i}` } })
+    expect(s.past).toHaveLength(100)
+  })
+  it('select et setView n’empilent rien', () => {
+    const s = run(init(avecPiece()), { type: 'select', selection: { kind: 'room', id: 'r1' } },
+      { type: 'setView', view: { x: 0, y: 0, width: 1, height: 1 } })
+    expect(s.past).toHaveLength(0)
+  })
+  it('updateRoom identique n’empile rien', () => {
+    const s = run(init(avecPiece()), { type: 'updateRoom', id: 'r1', changes: { name: 'Salon' } })
+    expect(s.past).toHaveLength(0)
+  })
+  it('id inconnu : sans effet', () => {
+    const s0 = init(avecPiece())
+    expect(run(s0, { type: 'updateRoom', id: 'zz', changes: { name: 'x' } })).toBe(s0)
+    expect(run(s0, { type: 'rotateFurniture', id: 'zz' })).toBe(s0)
+  })
+  it('une modification vide le futur ; undo/redo gardent savedPlan et vue', () => {
+    const s0 = init()
+    const s1 = run(s0, { type: 'addRoom', room }, { type: 'undo' })
+    expect(s1.future).toHaveLength(1)
+    expect(s1.savedPlan).toBe(s0.savedPlan)
+    expect(s1.view).toBe(s0.view)
+    expect(run(s1, { type: 'addRoom', room: { ...room, id: 'x' } }).future).toHaveLength(0)
+  })
+})
+
+describe('pièces et meubles', () => {
+  it('déplacer une pièce translate ses meubles', () => {
+    const s = run(init(avecPiece()), {
+      type: 'updateRoom', id: 'r1', changes: { rect: { x: 100, y: 50, w: 400, h: 300 } },
+    })
+    expect(currentLevel(s).furniture[0]).toMatchObject({ x: 150, y: 100 })
+  })
+  it('deleteSelection sur une pièce supprime ses meubles', () => {
+    const s = run(init(avecPiece()), { type: 'select', selection: { kind: 'room', id: 'r1' } }, { type: 'deleteSelection' })
+    expect(currentLevel(s).rooms).toHaveLength(0)
+    expect(currentLevel(s).furniture).toHaveLength(0)
+    expect(s.selection).toBeNull()
+  })
+  it('rotateFurniture 270 → 0', () => {
+    const s = run(init(avecPiece()), { type: 'rotateFurniture', id: 'f1' })
+    expect(currentLevel(s).furniture[0]!.rotation).toBe(0)
+  })
+})
+
+describe('niveaux et escalier', () => {
+  it('addUpperLevel bascule sur r1, sans effet s’il existe', () => {
+    const s = run(init(), { type: 'addUpperLevel' })
+    expect(s.levelId).toBe('r1')
+    expect(run(s, { type: 'addUpperLevel' })).toBe(s)
+  })
+  it('removeUpperLevel supprime r1 et l’escalier', () => {
+    const s = run(init(), { type: 'setStairs', rect: { x: 0, y: 0, w: 100, h: 200 } }, { type: 'addUpperLevel' },
+      { type: 'removeUpperLevel' })
+    expect(s.plan.levels).toHaveLength(1)
+    expect(s.plan.stairs).toBeNull()
+    expect(s.levelId).toBe('rdc')
+  })
+})
+
+describe('isDirty', () => {
+  it('faux / vrai / faux selon markSaved et undo', () => {
+    const s0 = init()
+    expect(isDirty(s0)).toBe(false)
+    const s1 = run(s0, { type: 'addRoom', room })
+    expect(isDirty(s1)).toBe(true)
+    expect(isDirty(run(s1, { type: 'markSaved', plan: s1.plan }))).toBe(false)
+    expect(isDirty(run(s1, { type: 'undo' }))).toBe(false)
+  })
+})

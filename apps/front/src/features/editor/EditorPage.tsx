@@ -4,6 +4,8 @@ import { ApiError } from '../../lib/api'
 import { usePlan, useProject } from '../../lib/queries'
 import { Alert, ButtonLink, PageHeader } from '../../ui'
 import styles from './EditorPage.module.css'
+import { EditorProvider } from './state/EditorContext'
+import { initEditor } from './state/reducer'
 
 export function EditorPage() {
   const { id = '' } = useParams()
@@ -25,7 +27,13 @@ export function EditorPage() {
     return <div><PageHeader title="Projet" /><p role="status">Chargement du plan…</p></div>
   }
 
+  const initial = initEditor(
+    plan.data?.plan ?? { levels: [{ id: 'rdc', rooms: [], openings: [], furniture: [] }], stairs: null },
+    projet.data.site,
+  )
+
   return (
+    <EditorProvider initial={initial}>
     <div className={styles.page}>
       <header className={styles.entete}>
         <h1 className={styles.titre}>{projet.data.name}</h1>
@@ -45,5 +53,6 @@ export function EditorPage() {
         </aside>
       </div>
     </div>
+    </EditorProvider>
   )
 }
