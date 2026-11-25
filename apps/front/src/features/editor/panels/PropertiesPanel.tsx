@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { formatArea, formatMeters, type Rect, type Room, type RoomType } from '@digimmo/domain'
+import { formatArea, formatMeters, type Opening, type Rect, type Room, type RoomType } from '@digimmo/domain'
 import { parseMeters, parseMetersOrZero } from '../../../lib/units'
 import { Button, Field, Select } from '../../../ui'
+import { LARGEUR_MAX, LARGEUR_MIN } from '../geometry/openings'
 import { currentLevel } from '../state/reducer'
 import { useEditor } from '../state/useEditor'
 import styles from './PropertiesPanel.module.css'
@@ -83,11 +84,9 @@ export function PropertiesPanel() {
   const sel = state.selection
   const level = currentLevel(state)
   const room = sel?.kind === 'room' ? level.rooms.find((r) => r.id === sel.id) : undefined
+  const ouverture = sel?.kind === 'opening' ? level.openings.find((x) => x.id === sel.id) : undefined
   let titre: string | undefined
-  if (sel?.kind === 'opening') {
-    const o = level.openings.find((x) => x.id === sel.id)
-    if (o) titre = o.kind === 'door' ? 'Porte' : 'Fenêtre'
-  } else if (sel?.kind === 'furniture') {
+  if (sel?.kind === 'furniture') {
     const f = level.furniture.find((x) => x.id === sel.id)
     if (f) titre = `Meuble : ${f.label}`
   }
@@ -96,6 +95,7 @@ export function PropertiesPanel() {
     <section aria-labelledby="ed-proprietes" className={styles.panneau}>
       <h2 id="ed-proprietes">Propriétés</h2>
       {room ? <PanneauPiece key={room.id} room={room} />
+        : ouverture ? <PanneauOuverture key={ouverture.id} o={ouverture} />
         : escalier ? <PanneauEscalier rect={escalier.rect} />
         : titre ? <PanneauElement titre={titre} />
           : <p>Sélectionnez un élément du plan.</p>}
@@ -108,13 +108,57 @@ function supprimerEtFocaliser(dispatch: ReturnType<typeof useEditor>['dispatch']
   document.querySelector<SVGSVGElement>('svg[aria-label="Plan du projet"]')?.focus()
 }
 
-/** Ouverture ou meuble : seule la suppression pour l'instant (les tâches 7 à 9 ajoutent leurs champs). */
+/** Meuble : seule la suppression pour l'instant (la tâche 9 ajoute ses champs). */
 function PanneauElement({ titre }: { titre: string }) {
   const { dispatch } = useEditor()
   return (
     <div className={styles.champs}>
       <h3 className={styles.titreElement}>{titre}</h3>
       <Button variant="danger" size="sm" onClick={() => supprimerEtFocaliser(dispatch)}>Supprimer</Button>
+    </div>
+  )
+}
+
+const analyseLargeur = (texte: string): Analyse => {
+  const cm = parseMeters(texte)
+  return cm === null || cm < LARGEUR_MIN || cm > LARGEUR_MAX
+    ? { ok: false, error: `Valeur entre ${formatMeters(LARGEUR_MIN)} et ${formatMeters(LARGEUR_MAX)}` } : { ok: true, value: cm }
+}
+
+function PanneauOuverture({ o }: { o: Opening }) {
+  const { dispatch } = useEditor()
+  const porte = o.kind === 'door'
+  const modifier = (changes: Partial<Omit<Opening, 'id'>>) => dispatch({ type: 'updateOpening', id: o.id, changes })
+  const swing = (changes: Partial<NonNullable<Opening['swing']>>) => o.swing && modifier({ swing: { ...o.swing, ...changes } })
+  const analysePosition = (texte: string): Analyse => {
+    const cm = parseMetersOrZero(texte)
+    const max = MAX - o.width
+    return cm === null || cm < 0 || cm > max ? { ok: false, error: `Valeur entre ${formatMeters(0)} et ${formatMeters(max)}` } : { ok: true, value: cm }
+  }
+  return (
+    <div className={styles.champs}>
+      <h3 className={styles.titreElement}>{porte ? 'Porte' : 'Fenêtre'}</h3>
+      <Champ label="Largeur (m)" mono committed={metres(o.width)} parse={analyseLargeur} onCommit={(v) => modifier({ width: Number(v) })} />
+      <Champ label="Position (m)" mono committed={metres(o.start)} parse={analysePosition} onCommit={(v) => modifier({ start: Number(v) })} />
+      {porte && o.swing && (
+        <>
+          <Select
+            label="Charnière"
+            value={o.swing.hinge}
+            options={[{ value: 'start', label: 'Début' }, { value: 'end', label: 'Fin' }]}
+            onChange={(e) => swing({ hinge: e.target.value as 'start' | 'end' })}
+          />
+          <Select
+            label="Ouverture"
+            value={o.swing.side}
+            options={[{ value: 'neg', label: 'Côté A' }, { value: 'pos', label: 'Côté B' }]}
+            onChange={(e) => swing({ side: e.target.value as 'neg' | 'pos' })}
+          />
+        </>
+      )}
+      <Button variant="danger" size="sm" onClick={() => supprimerEtFocaliser(dispatch)}>
+        {porte ? 'Supprimer la porte' : 'Supprimer la fenêtre'}
+      </Button>
     </div>
   )
 }

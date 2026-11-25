@@ -9,7 +9,8 @@ import styles from './PlanCanvas.module.css'
 import { RoomShape } from './RoomShape'
 import { StairsShape } from './StairsShape'
 import { SelectionHandles } from './SelectionHandles'
-import { LIMITE_PIECES, useGesture } from './useGesture'
+import { OpeningShape } from './OpeningShape'
+import { useGesture } from './useGesture'
 
 const FACTEUR = 1.2
 const MIN = 1 / 8 // 800 %
@@ -180,7 +181,7 @@ export function PlanCanvas({ site, rules, violations }: Props) {
   const sel = state.selection
   const selRect = sel?.kind === 'room' ? level.rooms.find((r) => r.id === sel.id)?.rect
     : sel?.kind === 'stairs' ? state.plan.stairs?.rect : undefined
-  const classeSvg = [styles.svg, (state.tool === 'room' || state.tool === 'stairs') && styles.curseurPiece, espace && styles.pan, panne && styles.panActif].filter(Boolean).join(' ')
+  const classeSvg = [styles.svg, (state.tool === 'room' || state.tool === 'stairs' || state.tool === 'door' || state.tool === 'window') && styles.curseurPiece, espace && styles.pan, panne && styles.panActif].filter(Boolean).join(' ')
 
   return (
     <div className={styles.zone}>
@@ -224,6 +225,20 @@ export function PlanCanvas({ site, rules, violations }: Props) {
         ))}
         {autre?.rooms.map((r) => <RoomShape key={r.id} room={r} fantome />)}
         {level.rooms.map((r) => <RoomShape key={r.id} room={r} enErreur={enErreur.has(r.id)} />)}
+        {level.openings.map((o) => (
+          <OpeningShape
+            key={o.id}
+            opening={o}
+            enErreur={enErreur.has(o.id)}
+            selectionnee={sel?.kind === 'opening' && sel.id === o.id}
+            start={gesture.glisse?.id === o.id ? gesture.glisse.start : undefined}
+          />
+        ))}
+        {gesture.survol && (() => {
+          const s = gesture.survol
+          const h = s.orientation === 'h'
+          return <line data-segment-survol className={styles.survolMur} x1={h ? s.start : s.fixed} y1={h ? s.fixed : s.start} x2={h ? s.end : s.fixed} y2={h ? s.fixed : s.end} />
+        })()}
         {state.plan.stairs && <StairsShape rect={state.plan.stairs.rect} />}
         {selRect && !gesture.apercu && (
           <rect className={styles.selection} x={selRect.x} y={selRect.y} width={selRect.w} height={selRect.h} />
@@ -235,7 +250,7 @@ export function PlanCanvas({ site, rules, violations }: Props) {
           <SelectionHandles rect={gesture.apercu ? gesture.apercu : selRect} cmParPx={view.width / (pxW || 1000)} />
         )}
       </svg>
-      {gesture.limite && <div className={styles.limite}><Alert tone="warning">{LIMITE_PIECES}</Alert></div>}
+      {gesture.limite && <div className={styles.limite}><Alert tone="warning">{gesture.limite}</Alert></div>}
       <div className={styles.outils} role="group" aria-label="Zoom">
         <Button variant="secondary" size="sm" aria-label="Zoom avant" onClick={() => zoomer(FACTEUR)}>+</Button>
         <Button variant="secondary" size="sm" aria-label="Zoom arrière" onClick={() => zoomer(1 / FACTEUR)}>−</Button>

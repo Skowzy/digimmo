@@ -46,7 +46,7 @@ describe('RulesPanel : navigation', () => {
     expect(h.etat.selection).toEqual({ kind: 'opening', id: 'o1' })
     expect(screen.getByRole('heading', { name: 'Porte' })).toBeInTheDocument()
     expect(screen.queryByText('Sélectionnez un élément du plan.')).toBeNull()
-    await userEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Supprimer la porte' }))
     expect(currentLevel(h.etat).openings).toHaveLength(0)
   })
   it('meuble et escalier : titres', async () => {

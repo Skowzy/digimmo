@@ -1,7 +1,7 @@
 export * from './types';
 export { formatMeters, formatArea } from './units';
 export { DEFAULT_RULE_PARAMS, rectangularSite } from './defaults';
-export { computeWallSegments } from './walls';
+export { computeWallSegments, findSegmentFor } from './walls';
 export type { WallSegment } from './walls';
 export { furnitureFootprint, containsRect } from './geometry';
 export { doorSwingRect, doorHinge } from './rules/openings';

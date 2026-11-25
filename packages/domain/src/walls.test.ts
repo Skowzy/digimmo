@@ -49,3 +49,10 @@ describe('findSegmentFor', () => {
     expect(findSegmentFor({ ...door, start: 250 }, segs)).toBeNull();
   });
 });
+
+describe('export public', () => {
+  it('findSegmentFor est exporté par l\'index', async () => {
+    const api = await import('./index');
+    expect(typeof api.findSegmentFor).toBe('function');
+  });
+});

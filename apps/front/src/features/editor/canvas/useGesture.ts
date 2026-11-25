@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Point, Rect, Room } from '@digimmo/domain'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { computeWallSegments, findSegmentFor, type Opening, type Point, type Rect, type Room, type WallSegment } from '@digimmo/domain'
 import { newId, nextRoomName } from '../geometry/ids'
-import { screenThreshold, snapRect, snapResize, type ResizeEdge } from '../geometry/snap'
+import { along, bornesStart, MAX_OUVERTURES, ouvertureCliquee, segmentProche } from '../geometry/openings'
+import { screenThreshold, snapRect, snapResize, snapValue, type ResizeEdge } from '../geometry/snap'
 import { svgPoint } from '../geometry/svgPoint'
 import { currentLevel } from '../state/reducer'
 import { useEditor } from '../state/useEditor'
 
 export const MAX_ROOMS = 100
 export const LIMITE_PIECES = 'Limite de 100 pièces par niveau atteinte.'
+export const LIMITE_OUVERTURES = `Limite de ${MAX_OUVERTURES} ouvertures par niveau atteinte.`
 const SEUIL_CLIC_PX = 4
 const TAILLE_CLIC_CM = 300
 const ESCALIER_CLIC_CM = { w: 100, h: 300 } // largeur × longueur
@@ -23,6 +25,7 @@ type Cible = { kind: 'room' | 'stairs'; id: string; rect: Rect }
 type Geste =
   | { kind: 'draw'; id: number; client: Point; start: Point; pour: 'room' | 'stairs' }
   | { kind: 'move'; id: number; client: Point; start: Point; cible: Cible; moved: boolean }
+  | { kind: 'slide'; id: number; client: Point; start: Point; ouv: Opening; seg: WallSegment | null; moved: boolean }
   | { kind: 'resize'; id: number; client: Point; cible: Cible; edge: ResizeEdge; moved: boolean }
 
 const chevauche = (a0: number, a1: number, b0: number, b1: number, t: number) => a0 <= b1 + t && b0 <= a1 + t
@@ -48,19 +51,22 @@ export function useGesture() {
   const { state, dispatch } = useEditor()
   const geste = useRef<Geste | null>(null)
   const [apercu, setApercu] = useState<Rect | null>(null)
-  const [limite, setLimite] = useState(false)
+  const [limite, setLimite] = useState<string | null>(null)
+  const [survol, setSurvol] = useState<WallSegment | null>(null)
+  const [glisse, setGlisse] = useState<{ id: string; start: number } | null>(null)
   const [actif, setActif] = useState(false)
   const niveau = currentLevel(state)
   const aEtage = state.plan.levels.some((l) => l.id === 'r1')
 
   // Changer d'outil efface le message (ajustement d'état pendant le rendu).
   const [outilVu, setOutilVu] = useState(state.tool)
-  if (outilVu !== state.tool) { setOutilVu(state.tool); setLimite(false) }
+  if (outilVu !== state.tool) { setOutilVu(state.tool); setLimite(null); setSurvol(null) }
 
   const annuler = useCallback(() => {
     if (!geste.current) return
     geste.current = null
     setApercu(null)
+    setGlisse(null)
     setActif(false)
   }, [])
   // Écouteurs de fenêtre seulement pendant un geste ; Échap est consommé (pas de raccourci concurrent).
@@ -80,10 +86,12 @@ export function useGesture() {
     }
   }, [actif, annuler])
 
+  const segments = useMemo(() => computeWallSegments(niveau.rooms), [niveau.rooms])
+  const outilOuverture = state.tool === 'door' || state.tool === 'window'
   const seuil = (svg: SVGSVGElement) => screenThreshold(state.view, svg.getBoundingClientRect().width)
   const autres = (exclu?: Cible) => niveau.rooms.filter((r) => exclu?.kind !== 'room' || r.id !== exclu.id).map((r) => r.rect)
 
-  const calculer = (g: Geste, svg: SVGSVGElement, e: { clientX: number; clientY: number }): Rect | null => {
+  const calculer = (g: Exclude<Geste, { kind: 'slide' }>, svg: SVGSVGElement, e: { clientX: number; clientY: number }): Rect | null => {
     const t = seuil(svg)
     const p = svgPoint(svg, e.clientX, e.clientY)
     if (g.kind === 'draw') {
@@ -117,6 +125,28 @@ export function useGesture() {
     return dansRepere({ x: gauche, y: haut, w: droite - gauche, h: bas - haut })
   }
 
+  /** Nouvelle position d'une ouverture glissée : le long du mur seulement, aimantée, bornée au segment. */
+  const calculerStart = (g: Extract<Geste, { kind: 'slide' }>, svg: SVGSVGElement, e: { clientX: number; clientY: number }): number => {
+    const p = svgPoint(svg, e.clientX, e.clientY)
+    const [min, max] = bornesStart(g.ouv.width, g.seg)
+    return Math.min(Math.max(snapValue(g.ouv.start + along(g.ouv, p) - along(g.ouv, g.start)), min), max)
+  }
+
+  const poser = (p: Point, svg: SVGSVGElement) => {
+    const kind = state.tool === 'door' ? 'door' : 'window'
+    const seg = segmentProche(segments, p, seuil(svg))
+    if (!seg) return
+    if (niveau.openings.length >= MAX_OUVERTURES) { setLimite(LIMITE_OUVERTURES); return }
+    const ids = new Set(state.plan.levels.flatMap((l) => l.openings.map((o) => o.id)))
+    const ouv = ouvertureCliquee(kind, seg, p, niveau.rooms, newId('o', ids))
+    if (!ouv) return
+    setLimite(null)
+    setSurvol(null)
+    dispatch({ type: 'addOpening', opening: ouv })
+    dispatch({ type: 'select', selection: { kind: 'opening', id: ouv.id } })
+    dispatch({ type: 'setTool', tool: 'select' })
+  }
+
   const creer = (rect: Rect, pour: 'room' | 'stairs') => {
     if (pour === 'stairs') {
       dispatch({ type: 'setStairs', rect })
@@ -124,10 +154,10 @@ export function useGesture() {
       dispatch({ type: 'setTool', tool: 'select' })
       return
     }
-    if (niveau.rooms.length >= MAX_ROOMS) { setLimite(true); return }
+    if (niveau.rooms.length >= MAX_ROOMS) { setLimite(LIMITE_PIECES); return }
     const ids = new Set(state.plan.levels.flatMap((l) => l.rooms.map((r) => r.id)))
     const room: Room = { id: newId('r', ids), type: 'autre', name: nextRoomName(niveau.rooms), rect }
-    setLimite(false)
+    setLimite(null)
     dispatch({ type: 'addRoom', room })
     dispatch({ type: 'select', selection: { kind: 'room', id: room.id } })
     dispatch({ type: 'setTool', tool: 'select' })
@@ -151,6 +181,7 @@ export function useGesture() {
       demarrer({ kind: 'draw', id: e.pointerId, client, start: p, pour: state.tool })
       return
     }
+    if (outilOuverture) { poser(p, svg); return }
     if (state.tool !== 'select') return
     const poignee = cible?.closest('[data-handle]')?.getAttribute('data-handle')
     const sel = state.selection
@@ -163,7 +194,15 @@ export function useGesture() {
       demarrer({ kind: 'resize', id: e.pointerId, client, cible: selCible, edge: poignee as ResizeEdge, moved: false })
       return
     }
-    setLimite(false)
+    setLimite(null)
+    const idOuv = cible?.closest('[data-opening]')?.getAttribute('data-opening')
+    const ouv = idOuv ? niveau.openings.find((o) => o.id === idOuv) : undefined
+    if (ouv) {
+      dispatch({ type: 'select', selection: { kind: 'opening', id: ouv.id } })
+      capturer()
+      demarrer({ kind: 'slide', id: e.pointerId, client, start: p, ouv, seg: findSegmentFor(ouv, segments), moved: false })
+      return
+    }
     let touchee: Cible | undefined
     if (escalier && cible?.closest('[data-stairs]')) touchee = { kind: 'stairs', id: 'stairs', rect: escalier.rect }
     else {
@@ -179,6 +218,11 @@ export function useGesture() {
 
   const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
     const g = geste.current
+    if (!g && outilOuverture) {
+      const svg = e.currentTarget
+      setSurvol(segmentProche(segments, svgPoint(svg, e.clientX, e.clientY), seuil(svg)))
+      return
+    }
     if (!g || g.id !== e.pointerId) return
     if ((e.buttons & 1) === 0) { annuler(); return } // bouton relâché hors du plan : geste périmé
     const dist = Math.hypot(e.clientX - g.client.x, e.clientY - g.client.y)
@@ -187,6 +231,7 @@ export function useGesture() {
       g.moved = true
     }
     if (g.kind === 'draw' && dist < SEUIL_CLIC_PX) return
+    if (g.kind === 'slide') { setGlisse({ id: g.ouv.id, start: calculerStart(g, e.currentTarget, e) }); return }
     setApercu(calculer(g, e.currentTarget, e))
   }
 
@@ -195,6 +240,7 @@ export function useGesture() {
     if (!g || g.id !== e.pointerId) return
     geste.current = null
     setApercu(null)
+    setGlisse(null)
     setActif(false)
     e.currentTarget.releasePointerCapture?.(e.pointerId)
     const svg = e.currentTarget
@@ -209,10 +255,15 @@ export function useGesture() {
       return
     }
     if (!g.moved) return
+    if (g.kind === 'slide') {
+      const start = calculerStart(g, svg, e)
+      if (start !== g.ouv.start) dispatch({ type: 'updateOpening', id: g.ouv.id, changes: { start } })
+      return
+    }
     const rect = calculer(g, svg, e)!
     const r0 = g.cible.rect
     if (rect.x === r0.x && rect.y === r0.y && rect.w === r0.w && rect.h === r0.h) return
-    setLimite(false)
+    setLimite(null)
     if (g.cible.kind === 'stairs') dispatch({ type: 'setStairs', rect })
     else dispatch({ type: 'updateRoom', id: g.cible.id, changes: { rect } })
   }
@@ -220,6 +271,8 @@ export function useGesture() {
   return {
     apercu,
     limite,
+    survol,
+    glisse,
     handlers: {
       onPointerDown,
       onPointerMove,

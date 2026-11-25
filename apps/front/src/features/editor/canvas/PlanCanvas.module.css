@@ -39,3 +39,13 @@
 .escalierRect { fill: var(--papier); stroke: var(--encre); stroke-width: 2; vector-effect: non-scaling-stroke; }
 .marche { stroke: var(--encre-2); stroke-width: 1; vector-effect: non-scaling-stroke; pointer-events: none; }
 .fleche { stroke: var(--encre); stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; }
+
+.ouverture { color: var(--encre); }
+.trou { stroke: var(--papier); stroke-linecap: butt; pointer-events: none; }
+.vantail { stroke: var(--encre); stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; }
+.arc { fill: none; stroke: var(--encre-2); stroke-width: 1; vector-effect: non-scaling-stroke; pointer-events: none; }
+.vitre { stroke: var(--encre); stroke-width: 1; vector-effect: non-scaling-stroke; pointer-events: none; }
+.zoneTouche { stroke: transparent; stroke-width: 24; pointer-events: stroke; cursor: ew-resize; }
+.contour { fill: none; stroke: var(--encre); stroke-width: 2; stroke-dasharray: 6 3; vector-effect: non-scaling-stroke; pointer-events: none; }
+.ouverture.enErreur .vantail, .ouverture.enErreur .arc, .ouverture.enErreur .vitre { stroke: var(--sanguine); }
+.survolMur { stroke: var(--encre); stroke-width: 6; opacity: 0.35; vector-effect: non-scaling-stroke; pointer-events: none; }
