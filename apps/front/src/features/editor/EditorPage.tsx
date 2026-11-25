@@ -1,11 +1,15 @@
+import { useMemo } from 'react'
 import { Link, useParams } from 'react-router'
+import { validatePlan, type RuleParams, type Site } from '@digimmo/domain'
 import { useTitrePage } from '../../app/useTitrePage'
 import { ApiError } from '../../lib/api'
 import { usePlan, useProject } from '../../lib/queries'
 import { Alert, Button, ButtonLink, PageHeader } from '../../ui'
 import styles from './EditorPage.module.css'
+import { PlanCanvas } from './canvas/PlanCanvas'
 import { EditorProvider } from './state/EditorContext'
 import { initEditor } from './state/reducer'
+import { useEditor } from './state/useEditor'
 
 export function EditorPage() {
   const { id = '' } = useParams()
@@ -40,9 +44,18 @@ export function EditorPage() {
 
   return (
     <EditorProvider key={id} initial={initial}>
+      <Editeur id={id} nom={projet.data.name} site={projet.data.site} rules={projet.data.rules} />
+    </EditorProvider>
+  )
+}
+
+function Editeur({ id, nom, site, rules }: { id: string; nom: string; site: Site; rules: RuleParams }) {
+  const { state } = useEditor()
+  const violations = useMemo(() => validatePlan(site, rules, state.plan), [state.plan, site, rules])
+  return (
     <div className={styles.page}>
       <header className={styles.entete}>
-        <h1 className={styles.titre}>{projet.data.name}</h1>
+        <h1 className={styles.titre}>{nom}</h1>
         <Link to={`/projets/${id}/parametres`}>Paramètres du projet</Link>
         <div className={styles.sauvegarde} data-slot="sauvegarde" />
       </header>
@@ -50,7 +63,7 @@ export function EditorPage() {
       <div className={styles.zones}>
         <div className={styles.outils} role="toolbar" aria-label="Outils" />
         <div className={styles.canvas}>
-          <svg role="img" aria-label="Plan du projet" className={styles.svg} viewBox="0 0 1000 800" />
+          <PlanCanvas site={site} rules={rules} violations={violations} />
         </div>
         <aside className={styles.panneaux} aria-label="Panneaux">
           <section aria-labelledby="ed-proprietes"><h2 id="ed-proprietes">Propriétés</h2></section>
@@ -58,6 +71,5 @@ export function EditorPage() {
         </aside>
       </div>
     </div>
-    </EditorProvider>
   )
 }

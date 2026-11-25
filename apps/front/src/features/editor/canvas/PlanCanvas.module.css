@@ -1,0 +1,27 @@
+.zone { position: relative; width: 100%; height: clamp(520px, 75vh, 900px); }
+.svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; background: var(--blanc); }
+.pan { cursor: grab; }
+.panActif { cursor: grabbing; }
+
+.grille10 { stroke: var(--trait); stroke-width: 1; opacity: 0.35; vector-effect: non-scaling-stroke; }
+.grille100 { stroke: var(--trait); stroke-width: 1; opacity: 0.8; vector-effect: non-scaling-stroke; }
+
+.terrain { fill: none; stroke: var(--encre); stroke-width: 2; stroke-dasharray: 10 6; vector-effect: non-scaling-stroke; }
+.recul { stroke: var(--encre-2); stroke-width: 1; stroke-dasharray: 4 5; vector-effect: non-scaling-stroke; }
+.legendeRecul { font-family: var(--font-cote); font-size: 16px; fill: var(--encre-2); }
+
+.piece { color: var(--encre); }
+.pieceRect { fill: var(--papier); fill-opacity: 0.85; stroke: var(--encre); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.nom { font-family: var(--font-ui); font-size: 24px; fill: var(--encre); }
+.surface { font-family: var(--font-cote); font-size: 20px; fill: var(--encre-2); }
+.fantome { opacity: 0.3; pointer-events: none; }
+.enErreur .pieceRect { stroke: var(--sanguine); stroke-width: 3; }
+.hachure { fill: url(#hachure-erreur); stroke: none; pointer-events: none; }
+.hachureTrait { stroke: var(--sanguine); stroke-width: 2; }
+
+.selection { fill: none; stroke: var(--encre); stroke-width: 2; stroke-dasharray: 6 3; vector-effect: non-scaling-stroke; pointer-events: none; }
+
+.outils {
+  position: absolute; top: var(--esp-2); right: var(--esp-2);
+  display: flex; gap: var(--esp-1);
+}
