@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { axe } from 'vitest-axe'
@@ -84,5 +84,19 @@ describe('page de l\'éditeur', () => {
     const { container } = renderApp('/projets/p1')
     await screen.findByRole('img', { name: 'Plan du projet' })
     expect(await axe(container)).toHaveNoViolations()
+  })
+})
+
+describe('raccourcis dans la page', () => {
+  it('« ? » ouvre l\'aide, accessible (axe), et le bouton de la barre d\'outils aussi', async () => {
+    mock()
+    const { container } = renderApp('/projets/p1')
+    await screen.findByRole('img', { name: 'Plan du projet' })
+    fireEvent.keyDown(window, { key: '?', shiftKey: true })
+    expect(await screen.findByRole('dialog', { name: 'Raccourcis clavier' })).toBeInTheDocument()
+    expect(await axe(container)).toHaveNoViolations()
+    await userEvent.click(screen.getByRole('button', { name: 'Fermer' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Raccourcis clavier (?)' }))
+    expect(await screen.findByRole('dialog', { name: 'Raccourcis clavier' })).toBeInTheDocument()
   })
 })

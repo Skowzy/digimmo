@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { validatePlan, type RuleParams, type Site } from '@digimmo/domain'
 import { useTitrePage } from '../../app/useTitrePage'
@@ -18,6 +18,8 @@ import { useEditor } from './state/useEditor'
 import { useAutosave } from './save/useAutosave'
 import { SaveStatus } from './panels/SaveStatus'
 import { LeaveGuard } from './panels/LeaveGuard'
+import { ShortcutsDialog } from './panels/ShortcutsDialog'
+import { useShortcuts } from './useShortcuts'
 
 export function EditorPage() {
   const { id = '' } = useParams()
@@ -60,6 +62,8 @@ export function EditorPage() {
 function Editeur({ id, nom, site, rules }: { id: string; nom: string; site: Site; rules: RuleParams }) {
   const { state, dispatch } = useEditor()
   const { status, saveNow, lastError } = useAutosave({ projectId: id, state, dispatch })
+  const [aide, setAide] = useState(false)
+  useShortcuts(dispatch, state, { saveNow, openHelp: () => setAide(true) })
   const catalogue = useCatalog()
   const violations = useMemo(() => validatePlan(site, rules, state.plan), [state.plan, site, rules])
   return (
@@ -72,7 +76,7 @@ function Editeur({ id, nom, site, rules }: { id: string; nom: string; site: Site
       </header>
       <p className={styles.etroit}>L'éditeur est prévu pour un écran d'ordinateur.</p>
       <div className={styles.zones}>
-        <Toolbar />
+        <Toolbar onHelp={() => setAide(true)} />
         <div className={styles.centre}>
           <LevelTabs />
           <div className={styles.canvas}>
@@ -85,6 +89,7 @@ function Editeur({ id, nom, site, rules }: { id: string; nom: string; site: Site
           <RulesPanel violations={violations} />
         </aside>
       </div>
+      <ShortcutsDialog open={aide} onClose={() => setAide(false)} />
     </div>
   )
 }

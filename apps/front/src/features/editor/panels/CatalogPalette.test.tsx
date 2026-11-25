@@ -14,6 +14,7 @@ import { currentLevel, initEditor } from '../state/reducer'
 import type { EditorState, Tool } from '../state/types'
 import { useEditor } from '../state/useEditor'
 import { CatalogPalette } from './CatalogPalette'
+import { useShortcuts } from '../useShortcuts'
 import { PropertiesPanel } from './PropertiesPanel'
 
 const site = rectangularSite(2000, 3000, 'south')
@@ -29,6 +30,7 @@ const h = {} as { etat: EditorState }
 function Sonde() {
   const e = useEditor()
   useEffect(() => { h.etat = e.state })
+  useShortcuts(e.dispatch, e.state, { saveNow: () => Promise.resolve(true), openHelp: () => {} })
   return null
 }
 function Plateau() {
@@ -85,7 +87,7 @@ describe('palette du catalogue', () => {
   it('Échap sur le plan désarme', async () => {
     monter(planDe([grande]), 'furniture', null, 'lit2')
     await lit()
-    fireEvent.keyDown(svg(), { key: 'Escape' })
+    fireEvent.keyDown(svg(), { key: "Escape" })
     expect(h.etat.pendingFurniture).toBeNull()
   })
   it('désarme si le catalogue ne contient plus le meuble armé', async () => {

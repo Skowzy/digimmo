@@ -194,13 +194,6 @@ export function PlanCanvas({ site, rules, violations, catalogue }: Props) {
         tabIndex={-1}
         className={classeSvg}
         viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape' && state.pendingFurniture) dispatch({ type: 'armFurniture', catalogId: null })
-          else if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.metaKey && !e.altKey && sel?.kind === 'furniture') {
-            e.preventDefault()
-            dispatch({ type: 'rotateFurniture', id: sel.id })
-          }
-        }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={(e) => { if (!finPan(e)) gesture.handlers.onPointerUp(e) }}
