@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { formatMeters, type RuleParams, type Site, type Violation } from '@digimmo/domain'
+import type { FurnitureItem } from '../../../lib/queries'
 import { Alert, Button } from '../../../ui'
 import { svgPoint } from '../geometry/svgPoint'
 import { currentLevel, initEditor } from '../state/reducer'
@@ -10,13 +11,14 @@ import { RoomShape } from './RoomShape'
 import { StairsShape } from './StairsShape'
 import { SelectionHandles } from './SelectionHandles'
 import { OpeningShape } from './OpeningShape'
+import { FurnitureShape } from './FurnitureShape'
 import { useGesture } from './useGesture'
 
 const FACTEUR = 1.2
 const MIN = 1 / 8 // 800 %
 const MAX = 4 // 25 %
 
-type Props = { site: Site; rules: RuleParams; violations: Violation[] }
+type Props = { site: Site; rules: RuleParams; violations: Violation[]; catalogue?: FurnitureItem[] }
 
 /** Étend la vue ajustée pour épouser le ratio de l'écran (centrée). */
 function ajuster(fit: View, ratio: number | null): View {
@@ -55,7 +57,7 @@ function reculs(site: Site, rules: RuleParams) {
   return lignes
 }
 
-export function PlanCanvas({ site, rules, violations }: Props) {
+export function PlanCanvas({ site, rules, violations, catalogue }: Props) {
   const { state, dispatch } = useEditor()
   const svgRef = useRef<SVGSVGElement>(null)
   const viewRef = useRef(state.view)
@@ -141,7 +143,7 @@ export function PlanCanvas({ site, rules, violations }: Props) {
     }
   }, [])
 
-  const gesture = useGesture()
+  const gesture = useGesture(catalogue)
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
     if (!(e.button === 1 || (espace && e.button === 0))) { gesture.handlers.onPointerDown(e); return }
     const pxW = e.currentTarget.getBoundingClientRect().width
@@ -181,7 +183,7 @@ export function PlanCanvas({ site, rules, violations }: Props) {
   const sel = state.selection
   const selRect = sel?.kind === 'room' ? level.rooms.find((r) => r.id === sel.id)?.rect
     : sel?.kind === 'stairs' ? state.plan.stairs?.rect : undefined
-  const classeSvg = [styles.svg, (state.tool === 'room' || state.tool === 'stairs' || state.tool === 'door' || state.tool === 'window') && styles.curseurPiece, espace && styles.pan, panne && styles.panActif].filter(Boolean).join(' ')
+  const classeSvg = [styles.svg, (state.tool === 'room' || state.tool === 'stairs' || state.tool === 'door' || state.tool === 'window' || (state.tool === 'furniture' && state.pendingFurniture)) && styles.curseurPiece, espace && styles.pan, panne && styles.panActif].filter(Boolean).join(' ')
 
   return (
     <div className={styles.zone}>
@@ -192,6 +194,13 @@ export function PlanCanvas({ site, rules, violations }: Props) {
         tabIndex={-1}
         className={classeSvg}
         viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' && state.pendingFurniture) dispatch({ type: 'armFurniture', catalogId: null })
+          else if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.metaKey && !e.altKey && sel?.kind === 'furniture') {
+            e.preventDefault()
+            dispatch({ type: 'rotateFurniture', id: sel.id })
+          }
+        }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={(e) => { if (!finPan(e)) gesture.handlers.onPointerUp(e) }}
@@ -233,6 +242,14 @@ export function PlanCanvas({ site, rules, violations }: Props) {
             enErreur={enErreur.has(o.id)}
             selectionnee={sel?.kind === 'opening' && sel.id === o.id}
             start={gesture.glisse?.id === o.id ? gesture.glisse.start : undefined}
+          />
+        ))}
+        {level.furniture.map((f) => (
+          <FurnitureShape
+            key={f.id}
+            furniture={f}
+            enErreur={enErreur.has(f.id)}
+            selectionnee={sel?.kind === 'furniture' && sel.id === f.id}
           />
         ))}
         {gesture.survol && (() => {

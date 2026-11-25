@@ -1,0 +1,10 @@
+.palette { display: flex; flex-direction: column; gap: var(--esp-2); }
+.groupe { margin: 0; font-size: 13px; color: var(--encre-2); }
+.liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--esp-1); }
+.item {
+  display: flex; justify-content: space-between; gap: var(--esp-2); width: 100%; text-align: left;
+  padding: var(--esp-1) var(--esp-2); background: var(--papier); color: var(--encre);
+  border: 1px solid var(--trait); border-radius: var(--rayon); cursor: pointer; font: inherit;
+}
+.item[aria-pressed='true'] { border-color: var(--encre); border-width: 2px; font-weight: 600; }
+.cote { font-family: var(--font-cote); color: var(--encre-2); white-space: nowrap; }

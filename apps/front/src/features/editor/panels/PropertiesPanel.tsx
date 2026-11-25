@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { formatArea, formatMeters, type Opening, type Rect, type Room, type RoomType } from '@digimmo/domain'
+import { formatArea, formatMeters, furnitureFootprint, type Furniture, type Opening, type Rect, type Room, type RoomType } from '@digimmo/domain'
 import { parseMeters, parseMetersOrZero } from '../../../lib/units'
 import { Button, Field, Select } from '../../../ui'
 import { LARGEUR_MAX, LARGEUR_MIN } from '../geometry/openings'
@@ -85,11 +85,7 @@ export function PropertiesPanel() {
   const level = currentLevel(state)
   const room = sel?.kind === 'room' ? level.rooms.find((r) => r.id === sel.id) : undefined
   const ouverture = sel?.kind === 'opening' ? level.openings.find((x) => x.id === sel.id) : undefined
-  let titre: string | undefined
-  if (sel?.kind === 'furniture') {
-    const f = level.furniture.find((x) => x.id === sel.id)
-    if (f) titre = `Meuble : ${f.label}`
-  }
+  const meuble = sel?.kind === 'furniture' ? level.furniture.find((x) => x.id === sel.id) : undefined
   const escalier = sel?.kind === 'stairs' ? state.plan.stairs : null
   return (
     <section aria-labelledby="ed-proprietes" className={styles.panneau}>
@@ -97,7 +93,7 @@ export function PropertiesPanel() {
       {room ? <PanneauPiece key={room.id} room={room} />
         : ouverture ? <PanneauOuverture key={ouverture.id} o={ouverture} />
         : escalier ? <PanneauEscalier rect={escalier.rect} />
-        : titre ? <PanneauElement titre={titre} />
+        : meuble ? <PanneauMeuble key={meuble.id} f={meuble} />
           : <p>Sélectionnez un élément du plan.</p>}
     </section>
   )
@@ -108,13 +104,34 @@ function supprimerEtFocaliser(dispatch: ReturnType<typeof useEditor>['dispatch']
   document.querySelector<SVGSVGElement>('svg[aria-label="Plan du projet"]')?.focus()
 }
 
-/** Meuble : seule la suppression pour l'instant (la tâche 9 ajoute ses champs). */
-function PanneauElement({ titre }: { titre: string }) {
+const TAILLE_MIN = 10
+const TAILLE_MAX = 1000
+const analyseTaille = (texte: string): Analyse => {
+  const cm = parseMeters(texte)
+  return cm === null || cm < TAILLE_MIN || cm > TAILLE_MAX
+    ? { ok: false, error: `Valeur entre ${formatMeters(TAILLE_MIN)} et ${formatMeters(TAILLE_MAX)}` } : { ok: true, value: cm }
+}
+
+function PanneauMeuble({ f }: { f: Furniture }) {
   const { dispatch } = useEditor()
+  const fp = furnitureFootprint(f)
+  const modifier = (changes: Partial<Omit<Furniture, 'id'>>) => dispatch({ type: 'updateFurniture', id: f.id, changes })
+  const analysePos = (taille: number) => (texte: string): Analyse => {
+    const cm = parseMetersOrZero(texte)
+    const max = MAX - taille
+    return cm === null || cm < 0 || cm > max ? { ok: false, error: `Valeur entre ${formatMeters(0)} et ${formatMeters(max)}` } : { ok: true, value: cm }
+  }
   return (
     <div className={styles.champs}>
-      <h3 className={styles.titreElement}>{titre}</h3>
-      <Button variant="danger" size="sm" onClick={() => supprimerEtFocaliser(dispatch)}>Supprimer</Button>
+      <h3 className={styles.titreElement}>Meuble : {f.label}</h3>
+      <Champ label="Libellé" committed={f.label} parse={analyseNom} onCommit={(v) => modifier({ label: String(v) })} />
+      <Champ label="X (m)" mono committed={metres(f.x)} parse={analysePos(fp.w)} onCommit={(v) => modifier({ x: Number(v) })} />
+      <Champ label="Y (m)" mono committed={metres(f.y)} parse={analysePos(fp.h)} onCommit={(v) => modifier({ y: Number(v) })} />
+      <Champ label="Largeur (m)" mono committed={metres(f.w)} parse={analyseTaille} onCommit={(v) => modifier({ w: Number(v) })} />
+      <Champ label="Profondeur (m)" mono committed={metres(f.d)} parse={analyseTaille} onCommit={(v) => modifier({ d: Number(v) })} />
+      <p className={styles.surface}>Rotation : <span className={styles.mono}>{f.rotation}°</span></p>
+      <Button variant="secondary" size="sm" onClick={() => dispatch({ type: 'rotateFurniture', id: f.id })}>Tourner d'un quart de tour</Button>
+      <Button variant="danger" size="sm" onClick={() => supprimerEtFocaliser(dispatch)}>Supprimer le meuble</Button>
     </div>
   )
 }

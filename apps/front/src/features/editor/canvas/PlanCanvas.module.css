@@ -49,3 +49,8 @@
 .contour { fill: none; stroke: var(--encre); stroke-width: 2; stroke-dasharray: 6 3; vector-effect: non-scaling-stroke; pointer-events: none; }
 .ouverture.enErreur .vantail, .ouverture.enErreur .arc, .ouverture.enErreur .vitre { stroke: var(--sanguine); stroke-width: 3; stroke-dasharray: 6 3; }
 .survolMur { stroke: var(--encre); stroke-width: 6; opacity: 0.35; vector-effect: non-scaling-stroke; pointer-events: none; }
+
+.meuble { color: var(--encre); }
+.meubleRect { fill: var(--papier); fill-opacity: 0.6; stroke: var(--encre); stroke-width: 1; vector-effect: non-scaling-stroke; cursor: move; }
+.meubleLibelle { fill: var(--encre); pointer-events: none; user-select: none; }
+.meuble.enErreur .meubleRect { stroke: var(--sanguine); stroke-width: 3; stroke-dasharray: 6 3; }

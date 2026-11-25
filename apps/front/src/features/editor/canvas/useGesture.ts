@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { computeWallSegments, findSegmentFor, type Opening, type Point, type Rect, type Room, type WallSegment } from '@digimmo/domain'
+import { computeWallSegments, findSegmentFor, furnitureFootprint, type Furniture, type Opening, type Point, type Rect, type Room, type WallSegment } from '@digimmo/domain'
+import type { FurnitureItem } from '../../../lib/queries'
 import { newId, nextRoomName } from '../geometry/ids'
 import { along, bornesStart, MAX_OUVERTURES, ouvertureCliquee, segmentProche } from '../geometry/openings'
 import { screenThreshold, snapRect, snapResize, snapValue, type ResizeEdge } from '../geometry/snap'
@@ -9,6 +10,8 @@ import { useEditor } from '../state/useEditor'
 
 export const MAX_ROOMS = 100
 export const LIMITE_PIECES = 'Limite de 100 pièces par niveau atteinte.'
+export const MAX_MEUBLES = 500
+export const LIMITE_MEUBLES = `Limite de ${MAX_MEUBLES} meubles par niveau atteinte.`
 export const LIMITE_OUVERTURES = `Limite de ${MAX_OUVERTURES} ouvertures par niveau atteinte.`
 const SEUIL_CLIC_PX = 4
 const TAILLE_CLIC_CM = 300
@@ -20,8 +23,8 @@ const borne = (v: number, max = MAX_CM) => Math.min(Math.max(v, 0), max)
 /** Garde le rectangle dans [0, MAX] en conservant sa taille. */
 const dansRepere = (r: Rect): Rect => ({ ...r, x: borne(r.x, MAX_CM - r.w), y: borne(r.y, MAX_CM - r.h) })
 
-/** Élément déplaçable ou redimensionnable : une pièce ou l'escalier. */
-type Cible = { kind: 'room' | 'stairs'; id: string; rect: Rect }
+/** Élément déplaçable ou redimensionnable : une pièce, l'escalier ou un meuble (déplacement seul). */
+type Cible = { kind: 'room' | 'stairs' | 'furniture'; id: string; rect: Rect }
 type Geste =
   | { kind: 'draw'; id: number; client: Point; start: Point; pour: 'room' | 'stairs' }
   | { kind: 'move'; id: number; client: Point; start: Point; cible: Cible; moved: boolean }
@@ -47,7 +50,7 @@ const normaliser = (a: Point, b: Point): Rect => ({
  * Gestes du plan (dessin, déplacement, redimensionnement). L'aperçu est un état local :
  * le réducteur n'est sollicité qu'à la fin du geste (une action = une entrée d'historique).
  */
-export function useGesture() {
+export function useGesture(catalogue: FurnitureItem[] = []) {
   const { state, dispatch } = useEditor()
   const geste = useRef<Geste | null>(null)
   const [apercu, setApercu] = useState<Rect | null>(null)
@@ -89,7 +92,10 @@ export function useGesture() {
   const segments = useMemo(() => computeWallSegments(niveau.rooms), [niveau.rooms])
   const outilOuverture = state.tool === 'door' || state.tool === 'window'
   const seuil = (svg: SVGSVGElement) => screenThreshold(state.view, svg.getBoundingClientRect().width)
-  const autres = (exclu?: Cible) => niveau.rooms.filter((r) => exclu?.kind !== 'room' || r.id !== exclu.id).map((r) => r.rect)
+  const autres = (exclu?: Cible) => [
+    ...niveau.rooms.filter((r) => exclu?.kind !== 'room' || r.id !== exclu.id).map((r) => r.rect),
+    ...(exclu?.kind === 'furniture' ? niveau.furniture.filter((f) => f.id !== exclu.id).map(furnitureFootprint) : []),
+  ]
 
   const calculer = (g: Exclude<Geste, { kind: 'slide' }>, svg: SVGSVGElement, e: { clientX: number; clientY: number }): Rect | null => {
     const t = seuil(svg)
@@ -147,6 +153,23 @@ export function useGesture() {
     dispatch({ type: 'setTool', tool: 'select' })
   }
 
+  /** Pose le meuble armé, centré sur le point, aimanté aux autres meubles et aux bords de la pièce cliquée. */
+  const placer = (p: Point, svg: SVGSVGElement) => {
+    const item = catalogue.find((i) => i.id === state.pendingFurniture)
+    if (!item) return
+    if (niveau.furniture.length >= MAX_MEUBLES) { setLimite(LIMITE_MEUBLES); return }
+    const t = seuil(svg)
+    const centre = { x: p.x - item.widthCm / 2, y: p.y - item.depthCm / 2, w: item.widthCm, h: item.depthCm }
+    const sousClic = niveau.rooms.filter((r) => p.x >= r.rect.x && p.x <= r.rect.x + r.rect.w && p.y >= r.rect.y && p.y <= r.rect.y + r.rect.h)
+    const c = candidats([...niveau.furniture.map(furnitureFootprint), ...sousClic.map((r) => r.rect)], centre, t)
+    const r = dansRepere({ ...centre, x: snapRect(centre, c.pourX, t).x, y: snapRect(centre, c.pourY, t).y })
+    const ids = new Set(state.plan.levels.flatMap((l) => l.furniture.map((f) => f.id)))
+    const meuble: Furniture = { id: newId('f', ids), catalogId: item.id, label: item.name, x: r.x, y: r.y, w: item.widthCm, d: item.depthCm, rotation: 0 }
+    setLimite(null)
+    dispatch({ type: 'addFurniture', furniture: meuble })
+    dispatch({ type: 'select', selection: { kind: 'furniture', id: meuble.id } })
+  }
+
   const creer = (rect: Rect, pour: 'room' | 'stairs') => {
     if (pour === 'stairs') {
       dispatch({ type: 'setStairs', rect })
@@ -182,6 +205,7 @@ export function useGesture() {
       return
     }
     if (outilOuverture) { poser(p, svg); return }
+    if (state.tool === 'furniture') { placer(p, svg); return }
     if (state.tool !== 'select') return
     const poignee = cible?.closest('[data-handle]')?.getAttribute('data-handle')
     const sel = state.selection
@@ -204,7 +228,10 @@ export function useGesture() {
       return
     }
     let touchee: Cible | undefined
-    if (escalier && cible?.closest('[data-stairs]')) touchee = { kind: 'stairs', id: 'stairs', rect: escalier.rect }
+    const idMeuble = cible?.closest('[data-furniture]')?.getAttribute('data-furniture')
+    const meuble = idMeuble ? niveau.furniture.find((f) => f.id === idMeuble) : undefined
+    if (meuble) touchee = { kind: 'furniture', id: meuble.id, rect: furnitureFootprint(meuble) }
+    else if (escalier && cible?.closest('[data-stairs]')) touchee = { kind: 'stairs', id: 'stairs', rect: escalier.rect }
     else {
       const id = cible?.closest('[data-room]')?.getAttribute('data-room')
       const room = id ? niveau.rooms.find((r) => r.id === id) : undefined
@@ -264,7 +291,8 @@ export function useGesture() {
     const r0 = g.cible.rect
     if (rect.x === r0.x && rect.y === r0.y && rect.w === r0.w && rect.h === r0.h) return
     setLimite(null)
-    if (g.cible.kind === 'stairs') dispatch({ type: 'setStairs', rect })
+    if (g.cible.kind === 'furniture') dispatch({ type: 'updateFurniture', id: g.cible.id, changes: { x: rect.x, y: rect.y } })
+    else if (g.cible.kind === 'stairs') dispatch({ type: 'setStairs', rect })
     else dispatch({ type: 'updateRoom', id: g.cible.id, changes: { rect } })
   }
 

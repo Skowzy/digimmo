@@ -3,10 +3,11 @@ import { Link, useParams } from 'react-router'
 import { validatePlan, type RuleParams, type Site } from '@digimmo/domain'
 import { useTitrePage } from '../../app/useTitrePage'
 import { ApiError } from '../../lib/api'
-import { usePlan, useProject } from '../../lib/queries'
+import { useCatalog, usePlan, useProject } from '../../lib/queries'
 import { Alert, Button, ButtonLink, PageHeader } from '../../ui'
 import styles from './EditorPage.module.css'
 import { LevelTabs } from './panels/LevelTabs'
+import { CatalogPalette } from './panels/CatalogPalette'
 import { PropertiesPanel } from './panels/PropertiesPanel'
 import { RulesPanel } from './panels/RulesPanel'
 import { Toolbar } from './panels/Toolbar'
@@ -55,6 +56,7 @@ export function EditorPage() {
 
 function Editeur({ id, nom, site, rules }: { id: string; nom: string; site: Site; rules: RuleParams }) {
   const { state } = useEditor()
+  const catalogue = useCatalog()
   const violations = useMemo(() => validatePlan(site, rules, state.plan), [state.plan, site, rules])
   return (
     <div className={styles.page}>
@@ -69,10 +71,11 @@ function Editeur({ id, nom, site, rules }: { id: string; nom: string; site: Site
         <div className={styles.centre}>
           <LevelTabs />
           <div className={styles.canvas}>
-            <PlanCanvas site={site} rules={rules} violations={violations} />
+            <PlanCanvas site={site} rules={rules} violations={violations} catalogue={catalogue.data} />
           </div>
         </div>
         <aside className={styles.panneaux} aria-label="Panneaux">
+          <CatalogPalette />
           <PropertiesPanel />
           <RulesPanel violations={violations} />
         </aside>

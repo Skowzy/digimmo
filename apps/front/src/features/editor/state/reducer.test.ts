@@ -165,4 +165,16 @@ describe('isDirty', () => {
       expect(currentLevel(s).openings).toEqual([ext, int, extV])
     })
   })
+  it('rotateFurniture : 4 rotations d\'un 75 × 40 ramènent exactement à x/y d\'origine', () => {
+    const t: Furniture = { id: 'f1', catalogId: 'tv', label: 'Meuble TV', x: 101, y: 57, w: 75, d: 40, rotation: 0 }
+    const plan: Plan = { levels: [{ id: 'rdc', rooms: [room], openings: [], furniture: [t] }], stairs: null }
+    let s = init(plan)
+    for (let i = 0; i < 4; i++) s = run(s, { type: 'rotateFurniture', id: 'f1' })
+    expect(currentLevel(s).furniture[0]).toMatchObject({ x: 101, y: 57, w: 75, d: 40, rotation: 0 })
+  })
+  it('setTool hors Meuble désarme le meuble', () => {
+    const s0 = { ...init(vide()), pendingFurniture: 'lit' }
+    expect(run(s0, { type: 'setTool', tool: 'select' }).pendingFurniture).toBeNull()
+    expect(run(s0, { type: 'setTool', tool: 'furniture' }).pendingFurniture).toBe('lit')
+  })
 })

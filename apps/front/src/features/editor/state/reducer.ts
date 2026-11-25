@@ -64,12 +64,19 @@ function commit(state: EditorState, plan: Plan, extra: Partial<EditorState> = {}
   }
 }
 
-/** Rotation de 90° autour du centre de l'empreinte (cm entiers). */
+/**
+ * Rotation de 90° autour du centre de l'empreinte (cm entiers). Quand w − d est impair, le centre
+ * tombe sur un demi-cm : on arrondit vers le bas à l'aller (rotation 0/180) et on compense au retour
+ * (90/270), si bien que quatre rotations ramènent exactement à la position d'origine.
+ */
 function rotate90(f: Furniture): Furniture {
-  const fp = furnitureFootprint(f)
-  const r = { ...f, rotation: ((f.rotation + 90) % 360) as Furniture['rotation'] }
-  const nf = furnitureFootprint(r)
-  return { ...r, x: Math.round(fp.x + fp.w / 2 - nf.w / 2), y: Math.round(fp.y + fp.h / 2 - nf.h / 2) }
+  const sens = f.rotation === 0 || f.rotation === 180 ? 1 : -1
+  return {
+    ...f,
+    rotation: ((f.rotation + 90) % 360) as Furniture['rotation'],
+    x: f.x + sens * Math.floor((f.w - f.d) / 2),
+    y: f.y + sens * Math.floor((f.d - f.w) / 2),
+  }
 }
 
 const levelOf = (plan: Plan, pick: (l: Level) => boolean) => plan.levels.find(pick)
@@ -81,7 +88,7 @@ export function editorReducer(state: EditorState, action: Action): EditorState {
   const { plan } = state
   switch (action.type) {
     case 'setTool':
-      return { ...state, tool: action.tool }
+      return { ...state, tool: action.tool, pendingFurniture: action.tool === 'furniture' ? state.pendingFurniture : null }
     case 'select':
       return { ...state, selection: action.selection }
     case 'setLevel':
