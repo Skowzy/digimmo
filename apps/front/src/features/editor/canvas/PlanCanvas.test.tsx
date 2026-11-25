@@ -6,6 +6,7 @@ import { DEFAULT_RULE_PARAMS, rectangularSite, type Plan, type Violation } from 
 import { PlanCanvas } from './PlanCanvas'
 import { EditorProvider } from '../state/EditorContext'
 import { initEditor } from '../state/reducer'
+import { useEditor } from '../state/useEditor'
 
 const site = rectangularSite(2000, 3000, 'south')
 const salon = { id: 's1', type: 'sejour' as const, name: 'Salon', rect: { x: 500, y: 500, w: 600, h: 400 } }
@@ -133,5 +134,19 @@ describe('PlanCanvas', () => {
       pan()
       expect(vb()).toBe(avant)
     })
+  })
+
+  it('une vue modifiée hors du canvas est reprise par le zoom suivant', async () => {
+    let envoyer!: ReturnType<typeof useEditor>['dispatch']
+    function Sonde() { envoyer = useEditor().dispatch; return null }
+    render(
+      <EditorProvider initial={initEditor(plan, site)}>
+        <PlanCanvas site={site} rules={DEFAULT_RULE_PARAMS} violations={[]} />
+        <Sonde />
+      </EditorProvider>,
+    )
+    act(() => envoyer({ type: 'setView', view: { x: 1000, y: 2000, width: 1200, height: 900 } }))
+    await userEvent.click(screen.getByRole('button', { name: 'Zoom avant' }))
+    expect(largeur()).toBeCloseTo(1200 / 1.2, 1)
   })
 })

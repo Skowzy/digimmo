@@ -55,6 +55,7 @@ export function PlanCanvas({ site, rules, violations }: Props) {
   const { state, dispatch } = useEditor()
   const svgRef = useRef<SVGSVGElement>(null)
   const viewRef = useRef(state.view)
+  const envoyee = useRef(state.view)
   const fit = useMemo(() => initEditor({ levels: [], stairs: null }, site).view, [site])
   const [ratio, setRatio] = useState<number | null>(null)
   const [espace, setEspace] = useState(false)
@@ -64,8 +65,13 @@ export function PlanCanvas({ site, rules, violations }: Props) {
   // La ref est mise à jour de façon synchrone : plusieurs événements dans une même image partent de la vue à jour.
   const setView = useCallback((view: View) => {
     viewRef.current = view
+    envoyee.current = view
     dispatch({ type: 'setView', view })
   }, [dispatch])
+  // Vue modifiée hors du canvas (action, annulation…) : on se resynchronise sur l'état.
+  useEffect(() => {
+    if (state.view !== envoyee.current) { viewRef.current = state.view; envoyee.current = state.view }
+  }, [state.view])
 
   // Ratio de l'écran (ResizeObserver absent en jsdom : on garde le ratio courant).
   useEffect(() => {
