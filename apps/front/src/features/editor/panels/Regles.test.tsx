@@ -50,10 +50,10 @@ describe('RulesPanel : navigation', () => {
     expect(currentLevel(h.etat).openings).toHaveLength(0)
   })
   it('meuble et escalier : titres', async () => {
-    monter([v({ message: 'M', refs: ['f1'], level: 'rdc' }), v({ message: 'E', refs: ['stairs'] })])
-    await userEvent.click(screen.getByRole('button', { name: /: M$/ }))
+    monter([v({ message: 'Lit gêné', refs: ['f1'], level: 'rdc' }), v({ message: 'Marches gênées', refs: ['stairs'] })])
+    await userEvent.click(screen.getByRole('button', { name: /Lit gêné/ }))
     expect(screen.getByRole('heading', { name: 'Meuble : Lit' })).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: /: E$/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Marches gênées/ }))
     expect(h.etat.selection).toEqual({ kind: 'stairs', id: 'stairs' })
     expect(screen.getByRole('heading', { name: 'Escalier' })).toBeInTheDocument()
   })
