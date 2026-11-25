@@ -95,6 +95,19 @@ describe('niveaux', () => {
     expect(h.etat.plan.levels).toHaveLength(1)
     expect(h.etat.past).toHaveLength(1)
     expect(parsePlan(h.etat.plan).ok).toBe(true)
+    expect(screen.getByRole('button', { name: '+ Étage' })).toHaveFocus()
+  })
+
+  it('annuler après le retrait rétablit l\'étage, l\'escalier et les onglets', async () => {
+    monter({ ...avecEtage, stairs: { rect: { x: 100, y: 100, w: 100, h: 300 } } })
+    await userEvent.click(screen.getByRole('button', { name: "Retirer l'étage" }))
+    const modal = await screen.findByRole('dialog', { name: "Retirer l'étage ?" })
+    await userEvent.click(within(modal).getByRole('button', { name: "Retirer l'étage" }))
+    expect(screen.queryByRole('tablist')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Annuler' }))
+    expect(h.etat.plan.levels).toHaveLength(2)
+    expect(h.etat.plan.stairs).toEqual({ rect: { x: 100, y: 100, w: 100, h: 300 } })
+    expect(screen.getByRole('tablist')).toBeInTheDocument()
   })
 })
 
@@ -117,6 +130,20 @@ describe('escalier', () => {
     await userEvent.click(screen.getByRole('tab', { name: 'Étage' }))
     expect(escalierEl()).not.toBeNull()
     expect(escalierEl()!.closest('[class*="fantome"]')).toBeNull()
+  })
+
+  it('un glisser plat (2 m × 0) donne une pièce et un escalier de 50 cm minimum', async () => {
+    monter(avecEtage)
+    await userEvent.click(screen.getByRole('button', { name: 'Pièce (P)' }))
+    glisser([1000, 1000], [1200, 1000])
+    const r = h.etat.plan.levels.find((l) => l.id === 'rdc')!.rooms.at(-1)!.rect
+    expect(r).toEqual({ x: 1000, y: 1000, w: 200, h: 50 })
+    await userEvent.click(screen.getByRole('button', { name: 'Escalier (E)' }))
+    glisser([1000, 1500], [1200, 1500])
+    expect(h.etat.plan.stairs?.rect).toEqual({ x: 1000, y: 1500, w: 200, h: 50 })
+    await userEvent.click(screen.getByRole('button', { name: 'Escalier (E)' }))
+    glisser([1500, 2000], [1300, 2000]) // vers la gauche : étendu dans le sens du glisser
+    expect(h.etat.plan.stairs?.rect).toEqual({ x: 1300, y: 2000, w: 200, h: 50 })
   })
 
   it('un clic dessine un escalier 100 × 300 centré', async () => {

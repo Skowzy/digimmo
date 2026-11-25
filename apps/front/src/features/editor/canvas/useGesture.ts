@@ -92,7 +92,12 @@ export function useGesture() {
         const c = candidats(autres(), z, t)
         return { x: borne(snapRect(z, c.pourX, t).x), y: borne(snapRect(z, c.pourY, t).y) }
       }
-      return dansRepere(normaliser(ancrer(g.start), ancrer(p)))
+      const a = ancrer(g.start)
+      const b = ancrer(p)
+      // Côté trop fin : on étend depuis le coin ancré, dans le sens du glisser.
+      if (Math.abs(b.x - a.x) < MIN_CM) b.x = a.x + (b.x < a.x ? -MIN_CM : MIN_CM)
+      if (Math.abs(b.y - a.y) < MIN_CM) b.y = a.y + (b.y < a.y ? -MIN_CM : MIN_CM)
+      return dansRepere(normaliser(a, b))
     }
     if (g.kind === 'move') {
       const r0 = g.cible.rect

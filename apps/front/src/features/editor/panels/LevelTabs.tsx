@@ -15,21 +15,25 @@ export function LevelTabs() {
   const [confirmer, setConfirmer] = useState(false)
   const refs = useRef<Partial<Record<LevelId, HTMLButtonElement | null>>>({})
   const focusEtage = useRef(false)
+  const focusAjout = useRef(false)
+  const boutonAjout = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (aEtage && focusEtage.current) { focusEtage.current = false; refs.current.r1?.focus() }
+    if (!aEtage && focusAjout.current) { focusAjout.current = false; boutonAjout.current?.querySelector('button')?.focus() }
   }, [aEtage])
 
   const ajouter = () => { focusEtage.current = true; dispatch({ type: 'addUpperLevel' }) }
   const retirer = () => {
     setConfirmer(false)
+    focusAjout.current = true
     dispatch({ type: 'removeUpperLevel' })
     if (state.tool === 'stairs') dispatch({ type: 'setTool', tool: 'select' })
   }
   const aller = (id: LevelId) => { dispatch({ type: 'setLevel', levelId: id }); refs.current[id]?.focus() }
 
   if (!aEtage) {
-    return <div className={styles.niveaux}><Button variant="secondary" size="sm" onClick={ajouter}>+ Étage</Button></div>
+    return <div ref={boutonAjout} className={styles.niveaux}><Button variant="secondary" size="sm" onClick={ajouter}>+ Étage</Button></div>
   }
   return (
     <div className={styles.niveaux}>
