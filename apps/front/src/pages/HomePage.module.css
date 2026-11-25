@@ -1,0 +1,14 @@
+.accueil { display: grid; gap: var(--esp-6); max-width: 60rem; margin: 0 auto; }
+.hero { display: grid; grid-template-columns: 1fr minmax(0, 20rem); gap: var(--esp-6); align-items: center; }
+.titre { font-family: var(--font-titre); font-size: 2.25rem; line-height: 1.2; margin: 0 0 var(--esp-4); color: var(--encre); }
+.sous-titre { margin: 0 0 var(--esp-5); color: var(--encre-2); font-size: 1.125rem; line-height: 1.5; }
+.actions { display: flex; flex-wrap: wrap; gap: var(--esp-3); }
+.calque { width: 100%; height: auto; color: var(--encre); background: var(--blanc); border: 1px solid var(--trait); border-radius: var(--rayon); }
+.terrain { fill: none; stroke: var(--encre-2); stroke-width: 2; stroke-dasharray: 8 6; }
+.piece { fill: var(--papier-2); stroke: var(--encre); stroke-width: 2; }
+.porte { fill: none; stroke: var(--sanguine); stroke-width: 2; }
+.avertissement { margin: 0; }
+@media (max-width: 639px) {
+  .hero { grid-template-columns: 1fr; }
+  .titre { font-size: 1.75rem; }
+}

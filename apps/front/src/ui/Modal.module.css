@@ -1,0 +1,11 @@
+.modal {
+  background: var(--papier);
+  color: var(--encre);
+  border: 1.5px solid var(--encre);
+  border-radius: var(--rayon);
+  padding: var(--esp-5);
+  max-width: 440px;
+}
+.modal::backdrop { background: var(--encre-2); opacity: 0.6; }
+.title { margin: 0 0 var(--esp-3); font-size: 20px; }
+.footer { display: flex; justify-content: flex-end; gap: var(--esp-2); margin-top: var(--esp-5); }

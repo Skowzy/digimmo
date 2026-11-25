@@ -1,0 +1,21 @@
+.page { max-width: 960px; margin: 0 auto; padding: var(--esp-6) var(--esp-4); }
+.section h2 { margin: var(--esp-6) 0 var(--esp-2); font-family: var(--font-cote); font-weight: 500; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--encre-2); }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
+.sw { width: 110px; font-family: var(--font-cote); font-size: 10px; }
+.chip { height: 44px; border: 1px solid var(--trait); margin-bottom: var(--esp-1); }
+.sw code { font-family: inherit; display: block; font-weight: 500; }
+.toolbar { display: flex; gap: 2px; background: var(--papier-2); padding: var(--esp-1); width: max-content; border: 1px solid var(--trait); }
+.cote { font-family: var(--font-cote); font-size: 12px; }
+.chip-papier { background: var(--papier); }
+.chip-papier-2 { background: var(--papier-2); }
+.chip-trait { background: var(--trait); }
+.chip-encre { background: var(--encre); }
+.chip-encre-2 { background: var(--encre-2); }
+.chip-sanguine { background: var(--sanguine); }
+.chip-sauge { background: var(--sauge); }
+.chip-ocre { background: var(--ocre); }
+.chip-blanc { background: var(--blanc); }
+.titre { font-family: var(--font-titre); font-size: 24px; font-weight: 600; margin: 0; }
+.sousTitre { font-family: var(--font-titre); font-style: italic; margin: 0; }
+.rangeeSuivante { margin-top: var(--esp-2); }
+.alertes { display: grid; gap: var(--esp-2); }

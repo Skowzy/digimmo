@@ -141,7 +141,7 @@ digimmo/                      (monorepo, npm workspaces)
 
 Direction visuelle **« Calque d'architecte »** (validée sur maquette) : fond papier crème, quadrillage léger, traits encre bleu nuit ; doit évoquer un vrai plan tout en restant une interface moderne.
 
-- **Tokens couleurs** (variables CSS) : `papier #f4efe4`, `papier-2 #ebe4d4`, `trait #c9bfa8`, `encre #2b3a55`, `encre-2 #5a6680`, `sanguine #a33a2f` (erreur), `sauge #4a7a4c` (valide), `ocre #a8761c` (alerte), `blanc #fbf8f1` (surfaces de saisie).
+- **Tokens couleurs** (variables CSS) : `papier #f4efe4`, `papier-2 #ebe4d4`, `trait #c9bfa8`, `encre #2b3a55`, `encre-2 #5a6680`, `sanguine #a33a2f` (erreur), `sauge #3f6b41` (valide), `ocre #845a10` (alerte), `blanc #fbf8f1` (surfaces de saisie). Sauge et ocre sont plus foncées que sur la maquette pour atteindre un contraste WCAG AA (≥ 4,5:1) sur papier, papier-2 et blanc.
 - **Typographie** (famille IBM Plex, choix validé) : Plex Serif pour les titres seulement, Plex Sans pour toute l'interface, Plex Mono pour les cotes, dimensions et surfaces.
 - **Composants** (React, avec variantes) : `Button` (primary / secondary / ghost / danger × md / sm), `Field` (style « ligne de cote », état erreur + message), `RuleBadge` (ok / alerte / erreur), `ToolButton` (barre d'outils, état actif), `ProjectCard`. On en ajoute au besoin (Modal, Tabs, Panel…), toujours dans le même système, jamais de style ad hoc.
 - Page **catalogue** listant tous les composants et tokens (référence pendant le développement, capture pour le dossier).

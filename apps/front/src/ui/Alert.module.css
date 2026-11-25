@@ -1,0 +1,13 @@
+.alert {
+  background: var(--blanc);
+  border: 1px solid var(--trait);
+  border-left: 4px solid var(--encre);
+  padding: var(--esp-3) var(--esp-4);
+  font-size: 13px;
+  color: var(--encre);
+}
+.title { display: block; margin-bottom: var(--esp-1); }
+.error { border-left-color: var(--sanguine); }
+.warning { border-left-color: var(--ocre); }
+.info { border-left-color: var(--encre-2); }
+.success { border-left-color: var(--sauge); }
