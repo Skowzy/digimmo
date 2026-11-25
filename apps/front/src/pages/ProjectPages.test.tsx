@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { axe } from 'vitest-axe'
@@ -123,6 +123,32 @@ describe('page projet', () => {
     const alerte = await screen.findByText('Paramètres enregistrés.')
     await waitFor(() => expect(document.activeElement).toBe(alerte.closest('[role="status"]')))
     expect(document.activeElement).toHaveTextContent('Paramètres enregistrés.')
+  })
+
+  it('après le succès, une actualisation ultérieure du projet ne vole pas le focus', async () => {
+    let courant = projet
+    mockProjet([])
+    server.use(
+      http.get('/api/projects/:id', () => HttpResponse.json(courant)),
+      http.patch('/api/projects/:id', () => {
+        courant = { ...projet, updatedAt: '2026-11-24T12:00:00Z' }
+        return HttpResponse.json(courant)
+      }),
+    )
+    const { queryClient } = renderApp('/projets/p1')
+    const champ = await screen.findByLabelText('Recul sur voie (m)')
+    await userEvent.clear(champ)
+    await userEvent.type(champ, '6')
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    const alerte = await screen.findByText('Paramètres enregistrés.')
+    await waitFor(() => expect(document.activeElement).toBe(alerte.closest('[role="status"]')))
+    // L'utilisateur reprend la saisie, puis le projet est modifié ailleurs et rechargé.
+    const nom = screen.getByLabelText('Nom du projet')
+    nom.focus()
+    courant = { ...projet, updatedAt: '2026-11-24T13:00:00Z' }
+    await act(() => queryClient.invalidateQueries({ queryKey: ['projects', 'p1'] }))
+    await waitFor(() => expect(screen.getByLabelText('Nom du projet')).toBeInTheDocument())
+    expect(document.activeElement).not.toBe(screen.getByText('Paramètres enregistrés.').closest('[role="status"]'))
   })
 
   it('404 : message et lien vers le tableau de bord', async () => {

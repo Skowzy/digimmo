@@ -25,12 +25,17 @@ export function ProjectPage() {
   const update = useUpdateProject(id)
   const [enregistre, setEnregistre] = useState(false)
   const succesRef = useRef<HTMLDivElement>(null)
+  const focusAFaire = useRef(false)
   const misAJour = projet.data?.updatedAt
 
   // Le formulaire est remonté après l'enregistrement (clé `updatedAt`) : le focus revient donc
-  // sur le message de succès, qui est ainsi annoncé.
+  // sur le message de succès, qui est ainsi annoncé. Une seule fois : une actualisation
+  // ultérieure du projet ne doit pas voler le focus pendant la saisie.
   useEffect(() => {
-    if (enregistre) succesRef.current?.focus()
+    if (enregistre && focusAFaire.current && succesRef.current) {
+      focusAFaire.current = false
+      succesRef.current.focus()
+    }
   }, [enregistre, misAJour])
 
   if (!projet.data && projet.isError) {
@@ -80,7 +85,13 @@ export function ProjectPage() {
           serverError={update.error}
           onSubmit={(values) => {
             setEnregistre(false)
-            return update.mutateAsync(values).then(() => setEnregistre(true), () => undefined)
+            return update.mutateAsync(values).then(
+              () => {
+                focusAFaire.current = true
+                setEnregistre(true)
+              },
+              () => undefined,
+            )
           }}
         />
       </section>
