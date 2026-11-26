@@ -105,7 +105,13 @@ const levelOf = (plan: Plan, pick: (l: Level) => boolean) => plan.levels.find(pi
 const validLevel = (plan: Plan, state: EditorState): Pick<EditorState, 'levelId'> =>
   ({ levelId: plan.levels.some((l) => l.id === state.levelId) ? state.levelId : 'rdc' })
 
+/** L'outil escalier n'a de sens qu'avec un niveau r1 : sans lui (annulation, suppression), retour à « select ». */
 export function editorReducer(state: EditorState, action: Action): EditorState {
+  const next = reduire(state, action)
+  return next.tool === 'stairs' && !next.plan.levels.some((l) => l.id === 'r1') ? { ...next, tool: 'select' } : next
+}
+
+function reduire(state: EditorState, action: Action): EditorState {
   const { plan } = state
   switch (action.type) {
     case 'setTool':

@@ -237,3 +237,18 @@ describe('bornes du repère (0..100000)', () => {
     expect(s.plan.stairs!.rect.x).toBe(99_900)
   })
 })
+
+describe("outil escalier sans niveau r1", () => {
+  it("annuler « + Étage » avec l'outil escalier actif repasse à « select »", () => {
+    const s = run(init(), { type: 'addUpperLevel' }, { type: 'setTool', tool: 'stairs' }, { type: 'undo' })
+    expect(s.tool).toBe('select')
+  })
+  it("supprimer l'étage repasse aussi à « select »", () => {
+    const s = run(init(), { type: 'addUpperLevel' }, { type: 'setTool', tool: 'stairs' }, { type: 'removeUpperLevel' })
+    expect(s.tool).toBe('select')
+  })
+  it("garde l'outil escalier tant que r1 existe", () => {
+    const s = run(init(), { type: 'addUpperLevel' }, { type: 'setTool', tool: 'stairs' }, { type: 'addUpperLevel' })
+    expect(s.tool).toBe('stairs')
+  })
+})
