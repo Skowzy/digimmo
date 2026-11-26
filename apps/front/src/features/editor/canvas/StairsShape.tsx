@@ -4,7 +4,7 @@ import styles from './PlanCanvas.module.css'
 const MARCHE_CM = 25
 
 /** Escalier : rectangle, marches tous les 25 cm le long du grand côté, flèche de montée et libellé « Monte ». */
-export function StairsShape({ rect }: { rect: Rect }) {
+export function StairsShape({ rect, enErreur = false }: { rect: Rect; enErreur?: boolean }) {
   const { x, y, w, h } = rect
   const vertical = h >= w // marches parallèles au petit côté
   const longueur = vertical ? h : w
@@ -18,9 +18,10 @@ export function StairsShape({ rect }: { rect: Rect }) {
     ? { tige: [cx, y + h - 20, cx, y + 20], pointe: `${cx - a},${y + 20 + a} ${cx},${y + 20} ${cx + a},${y + 20 + a}` }
     : { tige: [x + 20, cy, x + w - 20, cy], pointe: `${x + w - 20 - a},${cy - a} ${x + w - 20},${cy} ${x + w - 20 - a},${cy + a}` }
   return (
-    <g className={styles.escalier} data-stairs="stairs">
+    <g className={[styles.escalier, enErreur && styles.enErreur].filter(Boolean).join(' ')} data-stairs="stairs">
       <title>Escalier</title>
       <rect className={styles.escalierRect} x={x} y={y} width={w} height={h} />
+      {enErreur && <rect className={styles.hachure} x={x} y={y} width={w} height={h} />}
       {marches.map((d) => vertical
         ? <line key={d} className={styles.marche} x1={x} y1={y + d} x2={x + w} y2={y + d} />
         : <line key={d} className={styles.marche} x1={x + d} y1={y} x2={x + d} y2={y + h} />)}

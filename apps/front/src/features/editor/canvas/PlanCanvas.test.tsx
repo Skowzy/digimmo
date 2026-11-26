@@ -43,6 +43,17 @@ describe('PlanCanvas', () => {
     expect(container.querySelector('[data-room="s1"]')?.getAttribute('class')).toMatch(/enErreur/)
   })
 
+  it("l'escalier cité par une erreur porte .enErreur et une hachure", () => {
+    const v: Violation = { code: 'STAIRS_PLACEMENT', severity: 'error', message: 'x', refs: ['stairs'] }
+    const avecEscalier: Plan = { ...plan2, stairs: { rect: { x: 1500, y: 1500, w: 100, h: 300 } } }
+    const { container } = monter(avecEscalier, [v], 'r1')
+    const g = container.querySelector('[data-stairs]')!
+    expect(g.getAttribute('class')).toMatch(/enErreur/)
+    expect(g.querySelector('rect[class*="hachure"]')).not.toBeNull()
+    const sain = monter(avecEscalier, [], 'r1').container.querySelectorAll('[data-stairs]')
+    expect(sain[sain.length - 1]!.getAttribute('class')).not.toMatch(/enErreur/)
+  })
+
   it('un avertissement ne marque pas la pièce', () => {
     const v: Violation = { code: 'FOOTPRINT_NEAR_MAX', severity: 'warning', message: 'x', refs: ['s1'] }
     const { container } = monter(plan, [v])

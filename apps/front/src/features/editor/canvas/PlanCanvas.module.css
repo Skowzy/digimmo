@@ -36,6 +36,7 @@
 .limite { position: absolute; left: var(--esp-2); bottom: var(--esp-2); right: var(--esp-2); }
 
 .escalier { color: var(--encre); }
+.escalier.enErreur .escalierRect { stroke: var(--sanguine); stroke-width: 3; stroke-dasharray: 6 3; }
 .escalierRect { fill: var(--papier); stroke: var(--encre); stroke-width: 2; vector-effect: non-scaling-stroke; }
 .marche { stroke: var(--encre-2); stroke-width: 1; vector-effect: non-scaling-stroke; pointer-events: none; }
 .fleche { stroke: var(--encre); stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; }

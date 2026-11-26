@@ -250,7 +250,7 @@ export function PlanCanvas({ site, rules, violations, catalogue }: Props) {
           const h = s.orientation === 'h'
           return <line data-segment-survol className={styles.survolMur} x1={h ? s.start : s.fixed} y1={h ? s.fixed : s.start} x2={h ? s.end : s.fixed} y2={h ? s.fixed : s.end} />
         })()}
-        {state.plan.stairs && <StairsShape rect={state.plan.stairs.rect} />}
+        {state.plan.stairs && <StairsShape rect={state.plan.stairs.rect} enErreur={enErreur.has('stairs')} />}
         {selRect && !gesture.apercu && (
           <rect className={styles.selection} x={selRect.x} y={selRect.y} width={selRect.w} height={selRect.h} />
         )}
