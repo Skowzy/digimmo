@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import type { Plan, Violation } from '@digimmo/domain'
+import { parsePlan, type Plan, type Violation } from '@digimmo/domain'
 import { api, ApiError } from '../../../lib/api'
 import type { Action } from '../state/reducer'
 import { isDirty } from '../state/reducer'
@@ -54,6 +54,16 @@ export function useAutosave({ projectId, state, dispatch, delayMs = 3000 }: Opti
     const plan = planRef.current
     if (json(plan) === savedRef.current) return Promise.resolve(true)
     clearTimers()
+    // Filet de sécurité : on n'envoie jamais un plan que le schéma du domaine rejette.
+    const verif = parsePlan(plan)
+    if (!verif.ok) {
+      setError({
+        err: new ApiError('Le plan contient des valeurs hors limites.', 400,
+          ['Le plan contient des valeurs hors limites. Annulez la dernière modification.', ...verif.issues]),
+        planJson: json(plan),
+      })
+      return Promise.resolve(false)
+    }
     setSaving(true)
     setError(null)
     const run = (async () => {

@@ -363,4 +363,19 @@ describe('cycle de vie et erreurs', () => {
     await waitFor(() => expect(screen.getByText('Enregistré')).toBeInTheDocument())
     expect(screen.queryByText("Échec de l'enregistrement")).not.toBeInTheDocument()
   })
+
+  it('plan hors limites : aucun PUT, message lisible avec les anomalies', async () => {
+    const horsLimites: Plan = {
+      levels: [{ id: 'rdc', rooms: [], openings: [], furniture: [{ id: 'f1', catalogId: 'lit', label: 'Lit', x: 100_100, y: 0, w: 100, d: 100, rotation: 0 }] }],
+      stairs: null,
+    }
+    const s = serveur(horsLimites)
+    await ouvrir()
+    await modifier()
+    await avancer(3100)
+    await screen.findByText("Échec de l'enregistrement")
+    expect(screen.getByText('Le plan contient des valeurs hors limites. Annulez la dernière modification.')).toBeInTheDocument()
+    expect(screen.getByText(/levels\.0\.furniture\.0\.x/)).toBeInTheDocument()
+    expect(s.puts).toHaveLength(0)
+  })
 })
