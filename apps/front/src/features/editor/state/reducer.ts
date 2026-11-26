@@ -1,5 +1,6 @@
 import type { Furniture, Level, Opening, Plan, Rect, Room, Site } from '@digimmo/domain'
 import { computeWallSegments, containsRect, furnitureFootprint } from '@digimmo/domain'
+import { bornerValeur, clampRect, clampTranslation, MAX_CM } from '../geometry/bounds'
 import type { EditorState, Selection, Tool, View } from './types'
 
 export const HISTORY_MAX = 100
@@ -78,9 +79,26 @@ function rotate90(f: Furniture): Furniture {
     y: f.y + sens * Math.floor((f.d - f.w) / 2),
   }
   // Au bord du repère, l'empreinte tournée est ramenée dans [0, 100000] (réversibilité exacte perdue à cet endroit).
-  const fp = furnitureFootprint(r)
-  return { ...r, x: Math.min(Math.max(r.x, 0), 100_000 - fp.w), y: Math.min(Math.max(r.y, 0), 100_000 - fp.h) }
+  return rangerMeuble(r)
 }
+
+/** Position du meuble ramenée pour que son empreinte (et sa taille) tienne dans le repère. */
+function rangerMeuble(f: Furniture): Furniture {
+  const w = Math.min(Math.max(f.w, 1), MAX_CM), d = Math.min(Math.max(f.d, 1), MAX_CM)
+  const g = { ...f, w, d }
+  const fp = furnitureFootprint(g)
+  return { ...g, x: bornerValeur(g.x, MAX_CM - fp.w), y: bornerValeur(g.y, MAX_CM - fp.h) }
+}
+
+/** Ouverture ramenée dans le repère (mur, début et largeur). */
+function rangerOuverture(o: Opening): Opening {
+  const width = Math.min(Math.max(o.width, 1), MAX_CM)
+  return { ...o, width, fixed: bornerValeur(o.fixed), start: bornerValeur(o.start, MAX_CM - width) }
+}
+
+/** Rectangle occupé par une ouverture (épaisseur nulle) pour borner une translation. */
+const rectOuverture = (o: Opening): Rect =>
+  o.orientation === 'h' ? { x: o.start, y: o.fixed, w: o.width, h: 0 } : { x: o.fixed, y: o.start, w: 0, h: o.width }
 
 const levelOf = (plan: Plan, pick: (l: Level) => boolean) => plan.levels.find(pick)
 
@@ -106,34 +124,45 @@ export function editorReducer(state: EditorState, action: Action): EditorState {
       return { ...state, savedPlan: action.plan }
 
     case 'addRoom':
-      return commit(state, mapLevel(plan, currentLevel(state).id, (l) => ({ ...l, rooms: [...l.rooms, action.room] })))
+      return commit(state, mapLevel(plan, currentLevel(state).id, (l) => ({ ...l, rooms: [...l.rooms, { ...action.room, rect: clampRect(action.room.rect) }] })))
     case 'addOpening':
-      return commit(state, mapLevel(plan, currentLevel(state).id, (l) => ({ ...l, openings: [...l.openings, action.opening] })))
+      return commit(state, mapLevel(plan, currentLevel(state).id, (l) => ({ ...l, openings: [...l.openings, rangerOuverture(action.opening)] })))
     case 'addFurniture':
-      return commit(state, mapLevel(plan, currentLevel(state).id, (l) => ({ ...l, furniture: [...l.furniture, action.furniture] })))
+      return commit(state, mapLevel(plan, currentLevel(state).id, (l) => ({ ...l, furniture: [...l.furniture, rangerMeuble(action.furniture)] })))
 
     case 'updateRoom': {
       const lvl = levelOf(plan, (l) => l.rooms.some((r) => r.id === action.id))
       if (!lvl) return state
       return commit(state, mapLevel(plan, lvl.id, (l) => {
         const old = l.rooms.find((r) => r.id === action.id)!
-        const next: Room = { ...old, ...action.changes }
-        const pureMove = next.rect.w === old.rect.w && next.rect.h === old.rect.h
-        const dx = pureMove ? next.rect.x - old.rect.x : 0
-        const dy = pureMove ? next.rect.y - old.rect.y : 0
-        const moved = dx !== 0 || dy !== 0
+        const voulu: Room = { ...old, ...action.changes }
+        const pureMove = voulu.rect.w === old.rect.w && voulu.rect.h === old.rect.h
+        // Déplacement pur : la translation est bornée pour que la pièce, ses meubles et ses ouvertures restent dans le repère.
+        let dx = pureMove ? voulu.rect.x - old.rect.x : 0
+        let dy = pureMove ? voulu.rect.y - old.rect.y : 0
+        const deplace = dx !== 0 || dy !== 0
         // Ouvertures sur les murs extérieurs de la pièce (segments qu'elle seule borde), calculées avant le déplacement.
-        const murs = moved ? computeWallSegments(l.rooms).filter((s) => s.roomIds.length === 1 && s.roomIds[0] === old.id) : []
+        const murs = deplace ? computeWallSegments(l.rooms).filter((s) => s.roomIds.length === 1 && s.roomIds[0] === old.id) : []
         const surMur = (o: Opening) => murs.some((s) =>
           s.orientation === o.orientation && s.fixed === o.fixed && o.start >= s.start && o.start + o.width <= s.end)
+        const suivis = l.furniture.filter((f) => inRoom(old, f))
+        const portees = l.openings.filter(surMur)
+        if (deplace) {
+          ;({ dx, dy } = clampTranslation(
+            [old.rect, ...suivis.map(furnitureFootprint), ...portees.map(rectOuverture)], dx, dy))
+        }
+        const moved = dx !== 0 || dy !== 0
+        const next: Room = pureMove
+          ? { ...voulu, rect: { ...old.rect, x: old.rect.x + dx, y: old.rect.y + dy } }
+          : { ...voulu, rect: clampRect(voulu.rect) }
         return {
           ...l,
           rooms: l.rooms.map((r) => (r.id === old.id ? next : r)),
-          openings: !moved ? l.openings : l.openings.map((o) => !surMur(o) ? o
+          openings: !moved ? l.openings : l.openings.map((o) => !portees.includes(o) ? o
             : o.orientation === 'h' ? { ...o, start: o.start + dx, fixed: o.fixed + dy }
               : { ...o, start: o.start + dy, fixed: o.fixed + dx }),
-          furniture: dx === 0 && dy === 0 ? l.furniture
-            : l.furniture.map((f) => (inRoom(old, f) ? { ...f, x: f.x + dx, y: f.y + dy } : f)),
+          furniture: !moved ? l.furniture
+            : l.furniture.map((f) => (suivis.includes(f) ? { ...f, x: f.x + dx, y: f.y + dy } : f)),
         }
       }))
     }
@@ -141,14 +170,14 @@ export function editorReducer(state: EditorState, action: Action): EditorState {
       const lvl = levelOf(plan, (l) => l.openings.some((o) => o.id === action.id))
       if (!lvl) return state
       return commit(state, mapLevel(plan, lvl.id, (l) => ({
-        ...l, openings: l.openings.map((o) => (o.id === action.id ? { ...o, ...action.changes } : o)),
+        ...l, openings: l.openings.map((o) => (o.id === action.id ? rangerOuverture({ ...o, ...action.changes }) : o)),
       })))
     }
     case 'updateFurniture': {
       const lvl = levelOf(plan, (l) => l.furniture.some((f) => f.id === action.id))
       if (!lvl) return state
       return commit(state, mapLevel(plan, lvl.id, (l) => ({
-        ...l, furniture: l.furniture.map((f) => (f.id === action.id ? { ...f, ...action.changes } : f)),
+        ...l, furniture: l.furniture.map((f) => (f.id === action.id ? rangerMeuble({ ...f, ...action.changes }) : f)),
       })))
     }
     case 'rotateFurniture': {
@@ -162,7 +191,7 @@ export function editorReducer(state: EditorState, action: Action): EditorState {
     }
     case 'setStairs':
       if (action.rect && !plan.levels.some((l) => l.id === 'r1')) return state
-      return commit(state, { ...plan, stairs: action.rect ? { rect: action.rect } : null })
+      return commit(state, { ...plan, stairs: action.rect ? { rect: clampRect(action.rect) } : null })
 
     case 'addUpperLevel':
       if (plan.levels.some((l) => l.id === 'r1')) return state

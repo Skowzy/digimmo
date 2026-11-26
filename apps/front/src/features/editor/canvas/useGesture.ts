@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { computeWallSegments, findSegmentFor, furnitureFootprint, type Furniture, type Opening, type Point, type Rect, type Room, type WallSegment } from '@digimmo/domain'
 import type { FurnitureItem } from '../../../lib/queries'
 import { newId, nextRoomName } from '../geometry/ids'
+import { bornerValeur, clampRect } from '../geometry/bounds'
 import { along, bornesStart, MAX_OUVERTURES, ouvertureCliquee, segmentProche } from '../geometry/openings'
 import { screenThreshold, snapRect, snapResize, snapValue, type ResizeEdge } from '../geometry/snap'
 import { svgPoint } from '../geometry/svgPoint'
@@ -17,11 +18,8 @@ const SEUIL_CLIC_PX = 4
 const TAILLE_CLIC_CM = 300
 const ESCALIER_CLIC_CM = { w: 100, h: 300 } // largeur × longueur
 const MIN_CM = 50
-const MAX_CM = 100_000 // borne du schéma du domaine (coordonnées 0..100000)
-
-const borne = (v: number, max = MAX_CM) => Math.min(Math.max(v, 0), max)
-/** Garde le rectangle dans [0, MAX] en conservant sa taille. */
-const dansRepere = (r: Rect): Rect => ({ ...r, x: borne(r.x, MAX_CM - r.w), y: borne(r.y, MAX_CM - r.h) })
+const borne = bornerValeur
+const dansRepere = clampRect
 
 /** Élément déplaçable ou redimensionnable : une pièce, l'escalier ou un meuble (déplacement seul). */
 type Cible = { kind: 'room' | 'stairs' | 'furniture'; id: string; rect: Rect }

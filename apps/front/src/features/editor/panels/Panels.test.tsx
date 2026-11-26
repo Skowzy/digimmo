@@ -149,3 +149,69 @@ describe('RulesPanel', () => {
     expect(await axe(container)).toHaveNoViolations()
   })
 })
+
+describe('PropertiesPanel : bornes du repère', () => {
+  it("X ne peut pas dépasser 100000 − largeur : message « Valeur entre 0,00 m et … »", async () => {
+    monter()
+    const f = screen.getByLabelText('X (m)')
+    await userEvent.clear(f)
+    await userEvent.type(f, '999,5')
+    await userEvent.tab()
+    expect(screen.getByText(/Valeur entre 0,00 m et 996,00 m/)).toBeInTheDocument()
+    expect(salle().rect.x).toBe(500)
+  })
+  it('la largeur est bornée par la place restante à droite', async () => {
+    monter()
+    const f = screen.getByLabelText('Largeur (m)')
+    await userEvent.clear(f)
+    await userEvent.type(f, '999,5')
+    await userEvent.tab()
+    expect(screen.getByText(/Valeur entre 0,50 m et 995,00 m/)).toBeInTheDocument()
+    expect(salle().rect.w).toBe(400)
+  })
+})
+
+describe('PropertiesPanel : éléments du niveau', () => {
+  const plan = (): Plan => ({
+    levels: [{
+      id: 'rdc', rooms: [salon, { id: 's2', type: 'autre', name: 'Cuisine', rect: { x: 900, y: 500, w: 300, h: 200 } }],
+      openings: [
+        { id: 'o1', kind: 'door', orientation: 'v', fixed: 900, start: 520, width: 90, swing: { hinge: 'start', side: 'neg' } },
+        { id: 'o2', kind: 'window', orientation: 'h', fixed: 500, start: 520, width: 120 },
+      ],
+      furniture: [{ id: 'f1', catalogId: 'lit', label: 'Lit double', x: 520, y: 520, w: 160, d: 200, rotation: 0 }],
+    }],
+    stairs: null,
+  })
+  const monterPlan = () => render(
+    <EditorProvider initial={initEditor(plan(), site)}><PropertiesPanel /><Sonde /></EditorProvider>,
+  )
+  it('liste pièces, ouvertures numérotées et meubles ; le choix sélectionne', async () => {
+    monterPlan()
+    const choix = screen.getByLabelText('Éléments du niveau')
+    const noms = within(choix).getAllByRole('option').map((o) => o.textContent)
+    expect(noms).toEqual(expect.arrayContaining(['Salon', 'Cuisine', 'Porte 1', 'Fenêtre 1', 'Lit double']))
+    await userEvent.selectOptions(choix, 'Fenêtre 1')
+    expect(h.etat.selection).toEqual({ kind: 'opening', id: 'o2' })
+    expect(choix).toHaveValue('opening:o2')
+  })
+  it('clavier seul : choisir une pièce puis changer sa largeur', async () => {
+    monterPlan()
+    await userEvent.tab()
+    expect(screen.getByLabelText('Éléments du niveau')).toHaveFocus()
+    await userEvent.selectOptions(screen.getByLabelText('Éléments du niveau'), 'Cuisine')
+    const f = screen.getByLabelText('Largeur (m)')
+    await userEvent.clear(f)
+    await userEvent.type(f, '3,5{Enter}')
+    expect(currentLevel(h.etat).rooms[1]!.rect.w).toBe(350)
+  })
+  it('la valeur suit la sélection faite ailleurs', () => {
+    monterPlan()
+    act(() => h.envoyer({ type: 'select', selection: { kind: 'furniture', id: 'f1' } }))
+    expect(screen.getByLabelText('Éléments du niveau')).toHaveValue('furniture:f1')
+  })
+  it('axe sans violation', async () => {
+    const { container } = monterPlan()
+    expect(await axe(container)).toHaveNoViolations()
+  })
+})

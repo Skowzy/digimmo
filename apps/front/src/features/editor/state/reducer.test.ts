@@ -196,3 +196,44 @@ describe('isDirty', () => {
     expect(f.y + f.d).toBeLessThanOrEqual(100_000)
   })
 })
+
+describe('bornes du repère (0..100000)', () => {
+  const lit: Furniture = { id: 'f2', catalogId: 'lit', label: 'Lit', x: 100, y: 100, w: 200, d: 160, rotation: 0 }
+  const fenetreEst = { id: 'o1', kind: 'window' as const, orientation: 'v' as const, fixed: 400, start: 50, width: 120 }
+  const plan = (): Plan => ({
+    levels: [{ id: 'rdc', rooms: [room], openings: [fenetreEst], furniture: [lit] }], stairs: null,
+  })
+  const sain = (s: EditorState) => expect(parsePlan(s.plan)).toMatchObject({ ok: true })
+
+  it('A : déplacer une pièce à X = 1000 m garde le lit dans le repère', () => {
+    const s = run(init(plan()), { type: 'updateRoom', id: 'r1', changes: { rect: { x: 100_000, y: 0, w: 400, h: 300 } } })
+    expect(currentLevel(s).rooms[0]!.rect.x).toBe(99_600)
+    expect(currentLevel(s).furniture[0]!.x).toBe(99_700)
+    sain(s)
+  })
+  it("A' : la fenêtre du mur est ramenée et ne dépasse pas le repère", () => {
+    const s = run(init(plan()), { type: 'updateRoom', id: 'r1', changes: { rect: { x: 100_000, y: 0, w: 400, h: 300 } } })
+    expect(currentLevel(s).openings[0]!.fixed).toBe(100_000)
+    sain(s)
+  })
+  it('B : une ouverture placée au-delà du repère est ramenée dedans', () => {
+    const o = { id: 'o2', kind: 'door' as const, orientation: 'h' as const, fixed: 150_000, start: 99_990, width: 90, swing: { hinge: 'start' as const, side: 'neg' as const } }
+    const s = run(init(), { type: 'addOpening', opening: o })
+    expect(currentLevel(s).openings[0]).toMatchObject({ fixed: 100_000, start: 99_910 })
+    sain(s)
+  })
+  it('redimensionner au-delà du repère ramène la pièce dedans', () => {
+    const s = run(init(plan()), { type: 'updateRoom', id: 'r1', changes: { rect: { x: 0, y: 0, w: 150_000, h: 300 } } })
+    expect(currentLevel(s).rooms[0]!.rect.w).toBe(100_000)
+  })
+  it("un meuble déplacé ou agrandi reste dans le repère", () => {
+    const s = run(init(plan()), { type: 'updateFurniture', id: 'f2', changes: { x: 100_000, y: 100_000 } })
+    expect(currentLevel(s).furniture[0]).toMatchObject({ x: 99_800, y: 99_840 })
+    sain(s)
+  })
+  it("l'escalier est borné", () => {
+    const base = run(init(plan()), { type: 'addUpperLevel' })
+    const s = run(base, { type: 'setStairs', rect: { x: 99_990, y: 0, w: 100, h: 300 } })
+    expect(s.plan.stairs!.rect.x).toBe(99_900)
+  })
+})

@@ -181,7 +181,7 @@ describe('escalier', () => {
     await userEvent.clear(largeur)
     await userEvent.type(largeur, '0,2{Enter}')
     expect(h.etat.plan.stairs?.rect.w).toBe(100)
-    expect(screen.getByText('Valeur entre 0,50 m et 1000,00 m')).toBeInTheDocument()
+    expect(screen.getByText('Valeur entre 0,50 m et 988,00 m')).toBeInTheDocument()
   })
 
   it('un étage sans escalier fait apparaître l\'alerte', () => {

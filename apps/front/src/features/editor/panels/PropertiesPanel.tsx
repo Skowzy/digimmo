@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { formatArea, formatMeters, furnitureFootprint, type Furniture, type Opening, type Rect, type Room, type RoomType } from '@digimmo/domain'
 import { parseMeters, parseMetersOrZero } from '../../../lib/units'
 import { Button, Field, Select } from '../../../ui'
+import { MAX_CM } from '../geometry/bounds'
 import { LARGEUR_MAX, LARGEUR_MIN } from '../geometry/openings'
 import { currentLevel } from '../state/reducer'
 import { useEditor } from '../state/useEditor'
@@ -19,7 +20,7 @@ const TYPES: { value: RoomType; label: string }[] = [
   { value: 'autre', label: 'Autre' },
 ]
 
-const MAX = 100_000
+const MAX = MAX_CM
 const metres = (cm: number) => (cm / 100).toFixed(2).replace('.', ',')
 
 type Analyse = { ok: true; value: string | number } | { ok: false; error: string }
@@ -69,14 +70,48 @@ function Champ({ label, committed, parse, onCommit, mono }: {
   )
 }
 
-const bornes = (min: number): string => `Valeur entre ${formatMeters(min)} et ${formatMeters(MAX)}`
-const analyseMetres = (min: number, zero: boolean) => (texte: string): Analyse => {
+/** Mètres entre `min` et `max` cm ; le maximum tient compte de la place restante dans le repère. */
+const analyseMetres = (min: number, zero: boolean, max = MAX) => (texte: string): Analyse => {
   const cm = (zero ? parseMetersOrZero : parseMeters)(texte)
-  return cm === null || cm < min || cm > MAX ? { ok: false, error: bornes(min) } : { ok: true, value: cm }
+  return cm === null || cm < min || cm > max
+    ? { ok: false, error: `Valeur entre ${formatMeters(min)} et ${formatMeters(max)}` } : { ok: true, value: cm }
 }
 const analyseNom = (texte: string): Analyse => {
   const nom = texte.trim()
   return nom.length < 1 || nom.length > 60 ? { ok: false, error: 'Le nom doit faire entre 1 et 60 caractères.' } : { ok: true, value: nom }
+}
+
+/** Sélection au clavier : tous les éléments du niveau courant (et l'escalier) dans une liste déroulante. */
+function SelecteurElements() {
+  const { state, dispatch } = useEditor()
+  const level = currentLevel(state)
+  const sel = state.selection
+  const compte = { door: 0, window: 0 }
+  const options = [
+    { value: '', label: 'Aucun' },
+    ...level.rooms.map((r) => ({ value: `room:${r.id}`, label: r.name })),
+    ...level.openings.map((o) => ({
+      value: `opening:${o.id}`, label: `${o.kind === 'door' ? 'Porte' : 'Fenêtre'} ${++compte[o.kind]}`,
+    })),
+    ...level.furniture.map((f) => ({ value: `furniture:${f.id}`, label: f.label })),
+    ...(state.plan.stairs ? [{ value: 'stairs:stairs', label: 'Escalier' }] : []),
+  ]
+  const valeur = sel ? `${sel.kind}:${sel.id}` : ''
+  return (
+    <Select
+      label="Éléments du niveau"
+      value={options.some((o) => o.value === valeur) ? valeur : ''}
+      options={options}
+      onChange={(e) => {
+        const v = e.target.value
+        const i = v.indexOf(':')
+        dispatch({
+          type: 'select',
+          selection: i < 0 ? null : { kind: v.slice(0, i) as NonNullable<typeof sel>['kind'], id: v.slice(i + 1) },
+        })
+      }}
+    />
+  )
 }
 
 export function PropertiesPanel() {
@@ -90,6 +125,7 @@ export function PropertiesPanel() {
   return (
     <section aria-labelledby="ed-proprietes" className={styles.panneau}>
       <h2 id="ed-proprietes">Propriétés</h2>
+      <SelecteurElements />
       {room ? <PanneauPiece key={room.id} room={room} />
         : ouverture ? <PanneauOuverture key={ouverture.id} o={ouverture} />
         : escalier ? <PanneauEscalier rect={escalier.rect} />
@@ -190,10 +226,10 @@ function PanneauEscalier({ rect: r }: { rect: Rect }) {
   return (
     <div className={styles.champs}>
       <h3 className={styles.titreElement}>Escalier</h3>
-      <Champ label="X (m)" mono committed={metres(r.x)} parse={analyseMetres(0, true)} onCommit={(v) => rect({ x: Number(v) })} />
-      <Champ label="Y (m)" mono committed={metres(r.y)} parse={analyseMetres(0, true)} onCommit={(v) => rect({ y: Number(v) })} />
-      <Champ label="Largeur (m)" mono committed={metres(r.w)} parse={analyseMetres(50, false)} onCommit={(v) => rect({ w: Number(v) })} />
-      <Champ label="Longueur (m)" mono committed={metres(r.h)} parse={analyseMetres(50, false)} onCommit={(v) => rect({ h: Number(v) })} />
+      <Champ label="X (m)" mono committed={metres(r.x)} parse={analyseMetres(0, true, MAX - r.w)} onCommit={(v) => rect({ x: Number(v) })} />
+      <Champ label="Y (m)" mono committed={metres(r.y)} parse={analyseMetres(0, true, MAX - r.h)} onCommit={(v) => rect({ y: Number(v) })} />
+      <Champ label="Largeur (m)" mono committed={metres(r.w)} parse={analyseMetres(50, false, MAX - r.x)} onCommit={(v) => rect({ w: Number(v) })} />
+      <Champ label="Longueur (m)" mono committed={metres(r.h)} parse={analyseMetres(50, false, MAX - r.y)} onCommit={(v) => rect({ h: Number(v) })} />
       <Button variant="danger" size="sm" onClick={() => supprimerEtFocaliser(dispatch)}>Supprimer l'escalier</Button>
     </div>
   )
@@ -213,10 +249,10 @@ function PanneauPiece({ room }: { room: Room }) {
         options={TYPES}
         onChange={(e) => modifier({ type: e.target.value as RoomType })}
       />
-      <Champ label="X (m)" mono committed={metres(x)} parse={analyseMetres(0, true)} onCommit={(v) => rect({ x: Number(v) })} />
-      <Champ label="Y (m)" mono committed={metres(y)} parse={analyseMetres(0, true)} onCommit={(v) => rect({ y: Number(v) })} />
-      <Champ label="Largeur (m)" mono committed={metres(w)} parse={analyseMetres(50, false)} onCommit={(v) => rect({ w: Number(v) })} />
-      <Champ label="Profondeur (m)" mono committed={metres(h)} parse={analyseMetres(50, false)} onCommit={(v) => rect({ h: Number(v) })} />
+      <Champ label="X (m)" mono committed={metres(x)} parse={analyseMetres(0, true, MAX - w)} onCommit={(v) => rect({ x: Number(v) })} />
+      <Champ label="Y (m)" mono committed={metres(y)} parse={analyseMetres(0, true, MAX - h)} onCommit={(v) => rect({ y: Number(v) })} />
+      <Champ label="Largeur (m)" mono committed={metres(w)} parse={analyseMetres(50, false, MAX - x)} onCommit={(v) => rect({ w: Number(v) })} />
+      <Champ label="Profondeur (m)" mono committed={metres(h)} parse={analyseMetres(50, false, MAX - y)} onCommit={(v) => rect({ h: Number(v) })} />
       <p className={styles.surface}>Surface : <span className={styles.mono}>{formatArea(w * h)}</span></p>
       <Button
         variant="danger"

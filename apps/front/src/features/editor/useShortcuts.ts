@@ -1,11 +1,10 @@
 import { useEffect, useRef, type Dispatch } from 'react'
 import { flushSync } from 'react-dom'
 import type { Rect } from '@digimmo/domain'
+import { bornerValeur, clampRect, MAX_CM } from './geometry/bounds'
 import { currentLevel, type Action } from './state/reducer'
 import type { EditorState, Tool } from './state/types'
 
-const MAX = 100_000
-const clamp = (v: number, max: number) => Math.min(Math.max(v, 0), Math.max(max, 0))
 const OUTILS: Record<string, Tool> = { v: 'select', p: 'room', d: 'door', f: 'window', m: 'furniture', e: 'stairs' }
 const FLECHES: Record<string, [number, number]> = {
   ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1],
@@ -53,7 +52,7 @@ export function useShortcuts(dispatch: Dispatch<Action>, state: EditorState, opt
         const pas = e.shiftKey ? 1 : 10
         const [dx, dy] = [fleche[0] * pas, fleche[1] * pas]
         const level = currentLevel(state)
-        const deplacer = (r: Rect): Rect => ({ ...r, x: clamp(r.x + dx, MAX - r.w), y: clamp(r.y + dy, MAX - r.h) })
+        const deplacer = (r: Rect): Rect => clampRect({ ...r, x: r.x + dx, y: r.y + dy })
         if (sel.kind === 'room') {
           const r = level.rooms.find((x) => x.id === sel.id)
           if (r) dispatch({ type: 'updateRoom', id: sel.id, changes: { rect: deplacer(r.rect) } })
@@ -69,7 +68,7 @@ export function useShortcuts(dispatch: Dispatch<Action>, state: EditorState, opt
         } else {
           const o = level.openings.find((x) => x.id === sel.id)
           const d = o?.orientation === 'h' ? dx : dy
-          if (o && d !== 0) dispatch({ type: 'updateOpening', id: sel.id, changes: { start: clamp(o.start + d, MAX - o.width) } })
+          if (o && d !== 0) dispatch({ type: 'updateOpening', id: sel.id, changes: { start: bornerValeur(o.start + d, MAX_CM - o.width) } })
         }
         e.preventDefault()
         return

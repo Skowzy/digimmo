@@ -1,4 +1,5 @@
 import type { Opening, Point, Room, WallSegment } from '@digimmo/domain'
+import { MAX_CM } from './bounds'
 import { snapValue } from './snap'
 
 export const LARGEUR_DEFAUT = { door: 90, window: 120 } as const
@@ -29,7 +30,7 @@ export function segmentProche(segments: WallSegment[], p: Point, seuil: number):
 }
 
 /** Bornes de `start` : le segment porteur, sinon le repère entier. */
-export const bornesStart = (width: number, seg: WallSegment | null, max = 100_000): [number, number] =>
+export const bornesStart = (width: number, seg: WallSegment | null, max = MAX_CM): [number, number] =>
   seg ? [seg.start, seg.end - width] : [0, max - width]
 
 /** Ouverture centrée sur le point cliqué, ou null si le mur est trop court. */
