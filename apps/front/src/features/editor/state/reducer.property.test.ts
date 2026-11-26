@@ -84,7 +84,7 @@ describe('réducteur : propriété « le plan reste valide »', () => {
         const a = action()
         s = editorReducer(s, a)
         const res: ReturnType<typeof parsePlan> = parsePlan(s.plan as Plan)
-        if (!res.ok) throw new Error(`run ${run}, action ${i} ${JSON.stringify(a)} : ${res.issues.join(' ; ')}`)
+        expect(res.ok, `run ${run}, action ${i} ${JSON.stringify(a)} : ${res.ok ? '' : res.issues.join(' ; ')}`).toBe(true)
       }
     }
   })
