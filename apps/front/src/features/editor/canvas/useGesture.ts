@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { computeWallSegments, findSegmentFor, furnitureFootprint, type Furniture, type Opening, type Point, type Rect, type Room, type WallSegment } from '@digimmo/domain'
 import type { FurnitureItem } from '../../../lib/queries'
 import { newId, nextRoomName } from '../geometry/ids'
@@ -188,6 +189,11 @@ export function useGesture(catalogue: FurnitureItem[] = []) {
 
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
     if (e.button !== 0) return
+    // Valide la saisie en cours dans le panneau avant que la sélection ne le démonte (le blur arriverait trop tard).
+    const actif = document.activeElement
+    if (actif instanceof HTMLElement && actif.closest('[aria-labelledby="ed-proprietes"]') && /^(INPUT|SELECT|TEXTAREA)$/.test(actif.tagName)) {
+      flushSync(() => actif.blur())
+    }
     if (geste.current) {
       if (geste.current.id !== e.pointerId) return // second doigt : on ne touche pas au premier
       annuler() // geste périmé (pointerup perdu) : le nouveau remplace

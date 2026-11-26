@@ -1,8 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { act, useEffect } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { DEFAULT_RULE_PARAMS, parsePlan, rectangularSite, type Plan, type Room } from '@digimmo/domain'
 import { PlanCanvas } from './PlanCanvas'
+import { PropertiesPanel } from '../panels/PropertiesPanel'
 import { EditorProvider } from '../state/EditorContext'
 import { currentLevel, initEditor } from '../state/reducer'
 import type { EditorState, Tool } from '../state/types'
@@ -256,5 +258,25 @@ describe('robustesse des gestes (revue)', () => {
     fireEvent.pointerDown(salonEl(), pt(600, 600))
     fireEvent.pointerMove(svg(), pt(700, 600))
     expect(document.querySelector('[class*="selection"]')).toBeNull()
+  })
+})
+
+describe('saisie en cours dans le panneau', () => {
+  it('« 4,5 » tapé en largeur puis clic sur une autre pièce : la première pièce vaut w = 450', async () => {
+    const cuisine: Room = { id: 's2', type: 'cuisine', name: 'Cuisine', rect: { x: 1500, y: 500, w: 300, h: 400 } }
+    render(
+      <EditorProvider initial={{ ...initEditor(planDe([salon, cuisine]), site), selection: { kind: 'room', id: 's1' } }}>
+        <PropertiesPanel />
+        <PlanCanvas site={site} rules={DEFAULT_RULE_PARAMS} violations={[]} />
+        <Sonde />
+      </EditorProvider>,
+    )
+    const f = screen.getByLabelText('Largeur (m)')
+    await userEvent.clear(f)
+    await userEvent.type(f, '4,5')
+    fireEvent.pointerDown(document.querySelector('[data-room="s2"]')!, pt(1600, 600))
+    fireEvent.pointerUp(svg(), pt(1600, 600))
+    expect(rooms().find((r) => r.id === 's1')!.rect.w).toBe(450)
+    expect(h.etat.selection).toEqual({ kind: 'room', id: 's2' })
   })
 })
