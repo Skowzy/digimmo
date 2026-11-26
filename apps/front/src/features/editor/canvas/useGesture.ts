@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { computeWallSegments, findSegmentFor, furnitureFootprint, type Furniture, type Opening, type Point, type Rect, type Room, type WallSegment } from '@digimmo/domain'
 import type { FurnitureItem } from '../../../lib/queries'
@@ -187,13 +187,8 @@ export function useGesture(catalogue: FurnitureItem[] = []) {
 
   const demarrer = (g: Geste) => { geste.current = g; setActif(true) }
 
-  const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+  const traiterPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
     if (e.button !== 0) return
-    // Valide la saisie en cours dans le panneau avant que la sélection ne le démonte (le blur arriverait trop tard).
-    const actif = document.activeElement
-    if (actif instanceof HTMLElement && actif.closest('[aria-labelledby="ed-proprietes"]') && /^(INPUT|SELECT|TEXTAREA)$/.test(actif.tagName)) {
-      flushSync(() => actif.blur())
-    }
     if (geste.current) {
       if (geste.current.id !== e.pointerId) return // second doigt : on ne touche pas au premier
       annuler() // geste périmé (pointerup perdu) : le nouveau remplace
@@ -245,6 +240,19 @@ export function useGesture(catalogue: FurnitureItem[] = []) {
     dispatch({ type: 'select', selection: { kind: touchee.kind, id: touchee.id } })
     capturer()
     demarrer({ kind: 'move', id: e.pointerId, client, start: p, cible: touchee, moved: false })
+  }
+
+  // Dernière version du traitement : après le flushSync ci-dessous, il lit l'état à jour (pièce déjà modifiée par le blur).
+  const dernier = useRef(traiterPointerDown)
+  useLayoutEffect(() => { dernier.current = traiterPointerDown })
+  const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (e.button !== 0) return
+    // Valide la saisie en cours dans le panneau avant que la sélection ne le démonte (le blur arriverait trop tard).
+    const actif = document.activeElement
+    if (actif instanceof HTMLElement && actif.closest('[aria-labelledby="ed-proprietes"]') && /^(INPUT|SELECT|TEXTAREA)$/.test(actif.tagName)) {
+      flushSync(() => actif.blur())
+    }
+    dernier.current(e)
   }
 
   const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {

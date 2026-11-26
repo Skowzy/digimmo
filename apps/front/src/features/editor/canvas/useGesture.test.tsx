@@ -279,4 +279,38 @@ describe('saisie en cours dans le panneau', () => {
     expect(rooms().find((r) => r.id === 's1')!.rect.w).toBe(450)
     expect(h.etat.selection).toEqual({ kind: 'room', id: 's2' })
   })
+
+  const lit = { id: 'f1', catalogId: 'lit', label: 'Lit', x: 600, y: 600, w: 160, d: 200, rotation: 0 as const }
+  const monterAvecLit = () => render(
+    <EditorProvider initial={{
+      ...initEditor({ levels: [{ id: 'rdc', rooms: [salon], openings: [], furniture: [lit] }], stairs: null }, site),
+      selection: { kind: 'room', id: 's1' },
+    }}>
+      <PropertiesPanel />
+      <PlanCanvas site={site} rules={DEFAULT_RULE_PARAMS} violations={[]} />
+      <Sonde />
+    </EditorProvider>,
+  )
+  const taperLargeur = async () => {
+    const f = screen.getByLabelText('Largeur (m)')
+    await userEvent.clear(f)
+    await userEvent.type(f, '4,5')
+  }
+
+  it('saisie puis déplacement de la même pièce : w = 450, la pièce et le lit suivent', async () => {
+    monterAvecLit()
+    await taperLargeur()
+    glisser(salonEl(), [700, 800], [800, 800])
+    expect(rooms()[0]!.rect).toEqual({ x: 600, y: 500, w: 450, h: 400 })
+    expect(currentLevel(h.etat).furniture[0]!.x).toBe(700)
+  })
+  it('saisie puis poignée de redimensionnement : le redimensionnement part de w = 450', async () => {
+    monterAvecLit()
+    await taperLargeur()
+    const poignee = document.querySelector('[data-handle="w"]')!
+    fireEvent.pointerDown(poignee, pt(500, 700))
+    fireEvent.pointerMove(svg(), pt(600, 700))
+    fireEvent.pointerUp(svg(), pt(600, 700))
+    expect(rooms()[0]!.rect).toMatchObject({ x: 600, w: 350 })
+  })
 })
