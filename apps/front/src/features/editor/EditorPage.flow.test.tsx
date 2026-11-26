@@ -18,6 +18,9 @@ const catalogue = [
   { id: 'lit2', category: 'chambre', name: 'Lit double', widthCm: 160, depthCm: 200, symbol: 'bed' },
 ]
 
+// Horloge simulée sans avance automatique : userEvent la fait avancer, le délai de 3 s est piloté à la main.
+const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+
 const svg = () => screen.getByRole('img', { name: 'Plan du projet' })
 const pt = (x: number, y: number) => ({ pointerId: 1, button: 0, buttons: 1, clientX: x, clientY: y })
 const glisser = (a: [number, number], b: [number, number]) => {
@@ -29,12 +32,12 @@ const cliquer = (x: number, y: number) => {
   fireEvent.pointerDown(svg(), pt(x, y))
   fireEvent.pointerUp(svg(), pt(x, y))
 }
-const outil = (nom: string) => userEvent.click(screen.getByRole('button', { name: nom }))
+const outil = (nom: string) => user.click(screen.getByRole('button', { name: nom }))
 const nommer = async (nom: string, type: string) => {
   const champ = screen.getByLabelText('Nom')
-  await userEvent.clear(champ)
-  await userEvent.type(champ, `${nom}{Enter}`)
-  await userEvent.selectOptions(screen.getByLabelText('Type'), type)
+  await user.clear(champ)
+  await user.type(champ, `${nom}{Enter}`)
+  await user.selectOptions(screen.getByLabelText('Type'), type)
 }
 const dessiner = async (a: [number, number], b: [number, number], nom: string, type: string) => {
   await outil('Pièce (P)')
@@ -42,8 +45,15 @@ const dessiner = async (a: [number, number], b: [number, number], nom: string, t
   await nommer(nom, type)
 }
 
-beforeEach(() => { vi.useFakeTimers({ shouldAdvanceTime: true }) })
-afterEach(() => { vi.useRealTimers() })
+// Testing Library ne reconnaît les horloges simulées que via un global `jest` : on lui présente l'équivalent vitest.
+beforeEach(() => {
+  vi.useFakeTimers()
+  Object.assign(globalThis, { jest: { advanceTimersByTime: vi.advanceTimersByTime } })
+})
+afterEach(() => {
+  vi.useRealTimers()
+  Reflect.deleteProperty(globalThis, 'jest')
+})
 
 describe('parcours complet de l\'éditeur', () => {
   it('maison à deux niveaux dessinée à la souris : aucune erreur, sauvegarde automatique valide', async () => {
@@ -74,12 +84,12 @@ describe('parcours complet de l\'éditeur', () => {
 
     // Lit dans la chambre.
     await outil('Meuble (M)')
-    await userEvent.click(await screen.findByRole('button', { name: /Lit double/ }))
+    await user.click(await screen.findByRole('button', { name: /Lit double/ }))
     cliquer(800, 1250)
     expect(screen.getByRole('heading', { name: 'Meuble : Lit double' })).toBeInTheDocument()
 
     // Étage : chambre au-dessus du séjour, escalier dans le séjour sur les deux niveaux.
-    await userEvent.click(screen.getByRole('button', { name: '+ Étage' }))
+    await user.click(screen.getByRole('button', { name: '+ Étage' }))
     expect(screen.getByRole('tab', { name: 'Étage' })).toHaveAttribute('aria-selected', 'true')
     await dessiner([500, 500], [1100, 1000], 'Chambre 2', 'chambre')
     await outil('Escalier (E)')

@@ -99,7 +99,7 @@ L'éditeur 2D s'ouvre depuis un projet (`/projets/:id`). Le plan est dessiné en
 
 **Niveaux et escalier** : le plan compte le rez-de-chaussée et, au plus, un étage (« + Étage », « Retirer l'étage » avec confirmation). Une pièce d'étage doit reposer sur le rez-de-chaussée ; l'escalier est unique et commun aux deux niveaux. Retirer l'étage est annulable.
 
-**Sauvegarde automatique** : 3 secondes après la dernière modification, le plan est envoyé à l'API (`PUT /api/projects/:id/plan`). L'indicateur d'état affiche « Modifications non enregistrées », « Enregistrement… », « Enregistré » ou l'erreur avec un bouton de nouvel essai ; `Ctrl/Cmd + S` ou le bouton « Enregistrer » force l'enregistrement. Quitter la page avec des modifications non enregistrées ouvre une modale (Rester, Quitter sans enregistrer, Enregistrer et quitter) et déclenche l'avertissement du navigateur à la fermeture de l'onglet.
+**Sauvegarde automatique** : 3 secondes après la dernière modification, le plan est envoyé à l'API (`PUT /api/projects/:id/plan`). L'indicateur d'état affiche « Modifications non enregistrées », « Enregistrement… », « Enregistré » ou l'erreur avec un bouton de nouvel essai (après une erreur réseau ou serveur, un nouvel essai automatique a lieu toutes les 10 secondes) ; `Ctrl/Cmd + S` ou le bouton « Enregistrer » force l'enregistrement. Quitter la page avec des modifications non enregistrées ouvre une modale (Rester, Quitter sans enregistrer, Enregistrer et quitter) et déclenche l'avertissement du navigateur à la fermeture de l'onglet.
 
 **Limites par niveau** : 100 pièces, 200 ouvertures, 500 meubles (un message l'indique à l'atteinte de la limite).
 
