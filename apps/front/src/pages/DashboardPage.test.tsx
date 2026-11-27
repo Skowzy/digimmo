@@ -34,6 +34,7 @@ describe('tableau de bord', () => {
     renderApp('/projets')
     const liens = await screen.findAllByRole('link', { name: /Alpha|Beta/ })
     expect(liens.map((l) => l.textContent)).toEqual(['Alpha', 'Beta'])
+    expect(liens.map((l) => l.getAttribute('href'))).toEqual(['/projets/a', '/projets/b'])
     expect(await screen.findByText('2 erreurs')).toBeInTheDocument()
     expect(await screen.findByText('Aucun problème')).toBeInTheDocument()
     expect((await screen.findAllByText('Terrain 600,00 m² · Maison 112,00 m²'))).toHaveLength(2)

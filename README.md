@@ -81,6 +81,32 @@ Front : le serveur de développement (`npm run dev -w @digimmo/front`) redirige 
 Les courriers envoyés en local sont consultables dans Mailpit : http://localhost:8025.
 Les tests e2e de l'API (`npm run test:e2e -w @digimmo/back`) utilisent les bases de `docker compose` (base `digimmo_test`).
 
+## Éditeur
+
+L'éditeur 2D s'ouvre depuis un projet (`/projets/:id`). Le plan est dessiné en SVG ; les règles du `@digimmo/domain` sont réévaluées à chaque modification.
+
+**Outils** (barre d'outils ou touche) : Sélection (`V`), Pièce (`P`), Porte (`D`), Fenêtre (`F`), Meuble (`M`), Escalier (`E`, disponible dès qu'un étage existe).
+
+**Gestes à la souris**
+- Pièce : glisser pour tracer (aimantation à la grille de 10 cm et aux bords des autres pièces) ; un simple clic crée une pièce de 3 × 3 m. L'outil repasse en Sélection.
+- Sélection : cliquer pour sélectionner, glisser pour déplacer, tirer une poignée pour redimensionner une pièce ou l'escalier.
+- Porte / Fenêtre : cliquer sur un mur (une fenêtre seulement sur un mur extérieur) ; glisser l'ouverture pour la faire coulisser le long du mur.
+- Meuble : choisir un meuble dans la palette du catalogue, puis cliquer dans le plan (la palette reste armée pour poser plusieurs meubles, `Échap` la désarme).
+- Escalier : glisser sur l'étage ou le rez-de-chaussée ; il doit se trouver dans une pièce aux deux niveaux.
+- Vue : boutons Zoom avant / arrière / Ajuster au terrain, `Espace` + glisser pour déplacer la vue.
+
+**Panneaux** : *Propriétés* (nom, type, position et dimensions en mètres, charnière et sens d'ouverture des portes, rotation des meubles ; valeur validée à la perte du focus ou sur `Entrée`, `Échap` restaure), *Règles* (erreurs puis alertes ; cliquer sur une ligne sélectionne l'élément concerné, y compris sur l'autre niveau), *Meubles* (catalogue).
+
+**Niveaux et escalier** : le plan compte le rez-de-chaussée et, au plus, un étage (« + Étage », « Retirer l'étage » avec confirmation). Une pièce d'étage doit reposer sur le rez-de-chaussée ; l'escalier est unique et commun aux deux niveaux. Retirer l'étage est annulable.
+
+**Sauvegarde automatique** : 3 secondes après la dernière modification, le plan est envoyé à l'API (`PUT /api/projects/:id/plan`). L'indicateur d'état affiche « Modifications non enregistrées », « Enregistrement… », « Enregistré » ou l'erreur avec un bouton de nouvel essai (après une erreur réseau ou serveur, un nouvel essai automatique a lieu toutes les 10 secondes) ; `Ctrl/Cmd + S` ou le bouton « Enregistrer » force l'enregistrement. Quitter la page avec des modifications non enregistrées ouvre une modale (Rester, Quitter sans enregistrer, Enregistrer et quitter) et déclenche l'avertissement du navigateur à la fermeture de l'onglet.
+
+**Limites par niveau** : 100 pièces, 200 ouvertures, 500 meubles (un message l'indique à l'atteinte de la limite).
+
+**Raccourcis clavier** : `V P D F M E` choisissent l'outil, `R` tourne le meuble sélectionné, les flèches déplacent la sélection de 10 cm (`Maj` + flèche : 1 cm), `Suppr` / `Retour arrière` supprime, `Échap` annule le geste, désarme le meuble ou désélectionne, `Ctrl/Cmd + Z` annule, `Ctrl/Cmd + Maj + Z` ou `Ctrl/Cmd + Y` rétablit, `Ctrl/Cmd + S` enregistre. La touche `?` (ou le bouton « ? » de la barre d'outils) affiche la liste complète.
+
+Le parcours de bout en bout (trois pièces collées, porte, lit, étage, escalier, sauvegarde automatique) est vérifié par `apps/front/src/features/editor/EditorPage.flow.test.tsx`.
+
 ## Documentation
 
 - [Document de conception](docs/superpowers/specs/2026-11-23-digimmo-design.md) : intention, règles métier, architecture, design system, jalons.

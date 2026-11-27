@@ -22,6 +22,10 @@ npm run typecheck -w @digimmo/front
 
 Les appels réseau sont simulés par MSW (`src/test/server.ts`) ; `renderApp(chemin)` (`src/test/render.tsx`) monte l'application complète sur une route donnée. Chaque page est aussi vérifiée avec `axe` (accessibilité). `src/app/responsive.test.tsx` contrôle par lecture des feuilles de style qu'aucune largeur fixe supérieure à 360 px n'est déclarée ; le rendu réel à 360 px se vérifie à la main.
 
+## Éditeur
+
+L'éditeur 2D vit dans `src/features/editor/` : `state/` (réducteur avec historique annuler/rétablir), `canvas/` (rendu SVG et gestes dans `useGesture.ts`), `panels/` (outils, niveaux, propriétés, règles, catalogue, état de sauvegarde), `save/` (sauvegarde automatique à 3 s) et `useShortcuts.ts`. Les gestes se testent en jsdom avec des événements pointeur portant `buttons: 1` ; `EditorPage.flow.test.tsx` rejoue tout le parcours (MSW, minuteurs simulés). Le mode d'emploi utilisateur est dans la section « Éditeur » du `README.md` racine.
+
 ## Design system
 
 Les composants (`src/ui/`) et les jetons (`src/styles/tokens.css`) sont présentés sur la page **`/design-system`** (http://localhost:5173/design-system) : boutons, champs, pastilles de règles, alertes, modale, cartes de projet, etc.

@@ -8,7 +8,7 @@ import { siteToTerrain } from '../lib/units'
 import { Alert, ButtonLink, PageHeader, RuleBadge } from '../ui'
 import { useParams } from 'react-router'
 import type { Violation } from '@digimmo/domain'
-import styles from './ProjectPage.module.css'
+import styles from './ProjectSettingsPage.module.css'
 import { useTitrePage } from '../app/useTitrePage'
 
 function rang(v: Violation) {
@@ -17,10 +17,10 @@ function rang(v: Violation) {
 }
 const trier = (vs: Violation[]) => [...vs].sort((a, b) => rang(a) - rang(b))
 
-export function ProjectPage() {
+export function ProjectSettingsPage() {
   const { id = '' } = useParams()
   const projet = useProject(id)
-  useTitrePage(projet.data?.name ?? 'Projet')
+  useTitrePage('Paramètres du projet')
   const plan = usePlan(id)
   const update = useUpdateProject(id)
   const [enregistre, setEnregistre] = useState(false)
@@ -60,7 +60,7 @@ export function ProjectPage() {
       <FlashMessage />
       <PageHeader title={p.name} />
       {projet.isError && <Alert tone="warning">Impossible d'actualiser le projet.</Alert>}
-      <div className={styles.bientot}><p>L'éditeur arrive bientôt</p></div>
+      <ButtonLink to={`/projets/${id}`}>Retour à l'éditeur</ButtonLink>
       <section className={styles.section} aria-labelledby="violations">
         <h2 id="violations">Contrôle du plan</h2>
         {plan.isError && <Alert>{plan.error.message}</Alert>}

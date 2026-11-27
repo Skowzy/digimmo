@@ -1,4 +1,5 @@
 import type { RouteObject } from 'react-router'
+import { EditorPage } from '../features/editor/EditorPage'
 import { AccountPage } from '../pages/AccountPage'
 import { AdminCatalogPage } from '../pages/AdminCatalogPage'
 import { DashboardPage } from '../pages/DashboardPage'
@@ -7,7 +8,7 @@ import { ForgotPasswordPage } from '../pages/ForgotPasswordPage'
 import { HomePage } from '../pages/HomePage'
 import { LoginPage } from '../pages/LoginPage'
 import { NewProjectPage } from '../pages/NewProjectPage'
-import { ProjectPage } from '../pages/ProjectPage'
+import { ProjectSettingsPage } from '../pages/ProjectSettingsPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { ResetPasswordPage } from '../pages/ResetPasswordPage'
 import { AppShell } from './AppShell'
@@ -30,7 +31,8 @@ export const routes: RouteObject[] = [
         children: [
           { path: '/projets', element: <DashboardPage /> },
           { path: '/projets/nouveau', element: <NewProjectPage /> },
-          { path: '/projets/:id', element: <ProjectPage /> },
+          { path: '/projets/:id', element: <EditorPage /> },
+          { path: '/projets/:id/parametres', element: <ProjectSettingsPage /> },
           { path: '/compte', element: <AccountPage /> },
           {
             element: <RequireAdmin />,

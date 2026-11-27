@@ -64,17 +64,17 @@ describe('nouveau projet', () => {
   })
 })
 
-describe('page projet', () => {
+describe('page paramètres du projet', () => {
   it('violations : erreurs puis alertes, messages serveur, formulaire prérempli', async () => {
     mockProjet([v('warning', 'Alerte A', 'FOOTPRINT_NEAR_MAX'), v('warning', 'Trop', 'TOO_MANY_VIOLATIONS'), v('error', 'Erreur B'), v('warning', 'Alerte C', 'ROOM_MIN_AREA')])
-    renderApp('/projets/p1')
+    renderApp('/projets/p1/parametres')
     expect(await screen.findByRole('heading', { name: 'Alpha' })).toBeInTheDocument()
     expect(await screen.findByText('Erreur B')).toBeInTheDocument()
     const items = screen.getAllByRole('listitem').map((l) => l.textContent ?? '')
     const ordre = ['Erreur B', 'Alerte A', 'Alerte C', 'Trop'].map((t) => items.findIndex((i) => i.includes(t)))
     expect(ordre).toEqual([...ordre].sort((a, b) => a - b))
     expect(ordre.every((i) => i >= 0)).toBe(true)
-    expect(screen.getByText('L\'éditeur arrive bientôt')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Retour à l\'éditeur' })).toHaveAttribute('href', '/projets/p1')
     expect(screen.getByLabelText('Largeur (m)')).toHaveValue('20,00')
     expect(screen.getByLabelText('Profondeur (m)')).toHaveValue('30,00')
     expect(screen.getByLabelText('Côté de la voie')).toHaveValue('south')
@@ -82,7 +82,7 @@ describe('page projet', () => {
 
   it('aucune violation', async () => {
     mockProjet([])
-    renderApp('/projets/p1')
+    renderApp('/projets/p1/parametres')
     expect(await screen.findByText('Aucun problème détecté')).toBeInTheDocument()
   })
 
@@ -94,7 +94,7 @@ describe('page projet', () => {
       http.get('/api/projects/:id/plan', () => HttpResponse.json({ plan, validation: { violations, checkedAt: 'x' } })),
       http.patch('/api/projects/:id', async ({ request }) => { corps = (await request.json()) as typeof corps; violations = [v('error', 'Après')]; return HttpResponse.json(projet) }),
     )
-    renderApp('/projets/p1')
+    renderApp('/projets/p1/parametres')
     expect(await screen.findByText('Avant')).toBeInTheDocument()
     const champ = await screen.findByLabelText('Recul sur voie (m)')
     await userEvent.clear(champ)
@@ -115,7 +115,7 @@ describe('page projet', () => {
         return HttpResponse.json(courant)
       }),
     )
-    renderApp('/projets/p1')
+    renderApp('/projets/p1/parametres')
     const champ = await screen.findByLabelText('Recul sur voie (m)')
     await userEvent.clear(champ)
     await userEvent.type(champ, '6')
@@ -135,7 +135,7 @@ describe('page projet', () => {
         return HttpResponse.json(courant)
       }),
     )
-    const { queryClient } = renderApp('/projets/p1')
+    const { queryClient } = renderApp('/projets/p1/parametres')
     const champ = await screen.findByLabelText('Recul sur voie (m)')
     await userEvent.clear(champ)
     await userEvent.type(champ, '6')
@@ -188,7 +188,7 @@ describe('page projet', () => {
 
   it('échec d\'une actualisation : la page reste, avertissement non bloquant', async () => {
     mockProjet([])
-    const { queryClient } = renderApp('/projets/p1')
+    const { queryClient } = renderApp('/projets/p1/parametres')
     expect(await screen.findByRole('heading', { name: 'Alpha' })).toBeInTheDocument()
     server.use(http.get('/api/projects/:id', () => HttpResponse.json({ message: 'Boum.' }, { status: 500 })))
     await queryClient.invalidateQueries({ queryKey: ['projects', 'p1'], exact: true })
@@ -199,7 +199,7 @@ describe('page projet', () => {
 
   it('axe', async () => {
     mockProjet([v('error', 'Erreur B')])
-    const { container } = renderApp('/projets/p1')
+    const { container } = renderApp('/projets/p1/parametres')
     await screen.findByText('Erreur B')
     await screen.findByLabelText('Largeur (m)')
     expect(await axe(container)).toHaveNoViolations()

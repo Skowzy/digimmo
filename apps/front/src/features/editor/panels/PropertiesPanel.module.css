@@ -1,0 +1,5 @@
+.panneau { display: flex; flex-direction: column; }
+.champs { display: flex; flex-direction: column; gap: var(--esp-2); }
+.surface { margin: 0; }
+.mono { font-family: var(--font-cote); }
+.titreElement { margin: 0; font-size: 14px; }

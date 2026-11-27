@@ -1,0 +1,57 @@
+.zone { position: relative; width: 100%; height: clamp(520px, 75vh, 900px); }
+.svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; background: var(--blanc); }
+.pan { cursor: grab; }
+.panActif { cursor: grabbing; }
+
+.grille10 { stroke: var(--trait); stroke-width: 1; opacity: 0.35; vector-effect: non-scaling-stroke; }
+.grille100 { stroke: var(--trait); stroke-width: 1; opacity: 0.8; vector-effect: non-scaling-stroke; }
+
+.terrain { fill: none; stroke: var(--encre); stroke-width: 2; stroke-dasharray: 10 6; vector-effect: non-scaling-stroke; }
+.recul { stroke: var(--encre-2); stroke-width: 1; stroke-dasharray: 4 5; vector-effect: non-scaling-stroke; }
+.legendeRecul { font-family: var(--font-cote); font-size: 16px; fill: var(--encre-2); }
+
+.piece { color: var(--encre); }
+.pieceRect { fill: var(--papier); fill-opacity: 0.85; stroke: var(--encre); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.nom { font-family: var(--font-ui); font-size: 24px; fill: var(--encre); }
+.surface { font-family: var(--font-cote); font-size: 20px; fill: var(--encre-2); }
+.fantome { opacity: 0.3; pointer-events: none; }
+.enErreur .pieceRect { stroke: var(--sanguine); stroke-width: 3; }
+.hachure { fill: url(#hachure-erreur); stroke: none; pointer-events: none; }
+.hachureTrait { stroke: var(--sanguine); stroke-width: 2; }
+
+.selection { fill: none; stroke: var(--encre); stroke-width: 2; stroke-dasharray: 6 3; vector-effect: non-scaling-stroke; pointer-events: none; }
+
+.outils {
+  position: absolute; top: var(--esp-2); right: var(--esp-2);
+  display: flex; gap: var(--esp-1);
+}
+
+.curseurPiece { cursor: crosshair; }
+.apercu { fill: none; stroke: var(--encre); stroke-width: 2; stroke-dasharray: 8 4; vector-effect: non-scaling-stroke; pointer-events: none; }
+.poignee { fill: var(--blanc); stroke: var(--encre); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.curN { cursor: ns-resize; }
+.curE { cursor: ew-resize; }
+.curNE { cursor: nesw-resize; }
+.curNW { cursor: nwse-resize; }
+.limite { position: absolute; left: var(--esp-2); bottom: var(--esp-2); right: var(--esp-2); }
+
+.escalier { color: var(--encre); }
+.escalier.enErreur .escalierRect { stroke: var(--sanguine); stroke-width: 3; stroke-dasharray: 6 3; }
+.escalierRect { fill: var(--papier); stroke: var(--encre); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.marche { stroke: var(--encre-2); stroke-width: 1; vector-effect: non-scaling-stroke; pointer-events: none; }
+.fleche { stroke: var(--encre); stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; }
+
+.ouverture { color: var(--encre); }
+.trou { stroke: var(--papier); stroke-linecap: butt; pointer-events: none; }
+.vantail { stroke: var(--encre); stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; }
+.arc { fill: none; stroke: var(--encre-2); stroke-width: 1; vector-effect: non-scaling-stroke; pointer-events: none; }
+.vitre { stroke: var(--encre); stroke-width: 1; vector-effect: non-scaling-stroke; pointer-events: none; }
+.zoneTouche { stroke: transparent; stroke-width: 12; vector-effect: non-scaling-stroke; pointer-events: stroke; cursor: ew-resize; }
+.contour { fill: none; stroke: var(--encre); stroke-width: 2; stroke-dasharray: 6 3; vector-effect: non-scaling-stroke; pointer-events: none; }
+.ouverture.enErreur .vantail, .ouverture.enErreur .arc, .ouverture.enErreur .vitre { stroke: var(--sanguine); stroke-width: 3; stroke-dasharray: 6 3; }
+.survolMur { stroke: var(--encre); stroke-width: 6; opacity: 0.35; vector-effect: non-scaling-stroke; pointer-events: none; }
+
+.meuble { color: var(--encre); }
+.meubleRect { fill: var(--papier); fill-opacity: 0.6; stroke: var(--encre); stroke-width: 1; vector-effect: non-scaling-stroke; cursor: move; }
+.meubleLibelle { fill: var(--encre); pointer-events: none; user-select: none; }
+.meuble.enErreur .meubleRect { stroke: var(--sanguine); stroke-width: 3; stroke-dasharray: 6 3; }
